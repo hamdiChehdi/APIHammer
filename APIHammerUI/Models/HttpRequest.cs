@@ -1,0 +1,409 @@
+using System.ComponentModel;
+using System.Collections.ObjectModel;
+using System.Collections.Generic;
+using System.Linq;
+using System;
+
+namespace APIHammerUI.Models;
+
+public enum AuthenticationType
+{
+    None,
+    BasicAuth,
+    BearerToken,
+    ApiKey
+}
+
+public class AuthenticationSettings : INotifyPropertyChanged
+{
+    private AuthenticationType _type = AuthenticationType.None;
+    private string _username = "";
+    private string _password = "";
+    private string _token = "";
+    private string _apiKeyHeader = "X-API-Key";
+    private string _apiKeyValue = "";
+
+    public AuthenticationType Type
+    {
+        get => _type;
+        set
+        {
+            _type = value;
+            OnPropertyChanged(nameof(Type));
+        }
+    }
+
+    public string Username
+    {
+        get => _username;
+        set
+        {
+            _username = value;
+            OnPropertyChanged(nameof(Username));
+        }
+    }
+
+    public string Password
+    {
+        get => _password;
+        set
+        {
+            _password = value;
+            OnPropertyChanged(nameof(Password));
+        }
+    }
+
+    public string Token
+    {
+        get => _token;
+        set
+        {
+            _token = value;
+            OnPropertyChanged(nameof(Token));
+        }
+    }
+
+    public string ApiKeyHeader
+    {
+        get => _apiKeyHeader;
+        set
+        {
+            _apiKeyHeader = value;
+            OnPropertyChanged(nameof(ApiKeyHeader));
+        }
+    }
+
+    public string ApiKeyValue
+    {
+        get => _apiKeyValue;
+        set
+        {
+            _apiKeyValue = value;
+            OnPropertyChanged(nameof(ApiKeyValue));
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class HttpHeaderItem : INotifyPropertyChanged
+{
+    private string _key = "";
+    private string _value = "";
+    private bool _isEnabled = true;
+
+    public string Key
+    {
+        get => _key;
+        set
+        {
+            _key = value;
+            OnPropertyChanged(nameof(Key));
+        }
+    }
+
+    public string Value
+    {
+        get => _value;
+        set
+        {
+            _value = value;
+            OnPropertyChanged(nameof(Value));
+        }
+    }
+
+    public bool IsEnabled
+    {
+        get => _isEnabled;
+        set
+        {
+            _isEnabled = value;
+            OnPropertyChanged(nameof(IsEnabled));
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class HttpQueryParameter : INotifyPropertyChanged
+{
+    private string _key = "";
+    private string _value = "";
+    private bool _isEnabled = true;
+
+    public string Key
+    {
+        get => _key;
+        set
+        {
+            _key = value;
+            OnPropertyChanged(nameof(Key));
+        }
+    }
+
+    public string Value
+    {
+        get => _value;
+        set
+        {
+            _value = value;
+            OnPropertyChanged(nameof(Value));
+        }
+    }
+
+    public bool IsEnabled
+    {
+        get => _isEnabled;
+        set
+        {
+            _isEnabled = value;
+            OnPropertyChanged(nameof(IsEnabled));
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public class HttpRequest : INotifyPropertyChanged
+{
+    private string _method = "GET";
+    private string _url = "";
+    private string _body = "";
+    private string _response = "";
+    private bool _isLoading;
+    private ObservableCollection<HttpHeaderItem> _headers;
+    private ObservableCollection<HttpQueryParameter> _queryParameters;
+    private AuthenticationSettings _authentication;
+
+    public HttpRequest()
+    {
+        _headers = new ObservableCollection<HttpHeaderItem>();
+        _queryParameters = new ObservableCollection<HttpQueryParameter>();
+        _authentication = new AuthenticationSettings();
+        
+        // Add default headers
+        _headers.Add(new HttpHeaderItem { Key = "Content-Type", Value = "application/json" });
+        _headers.Add(new HttpHeaderItem { Key = "", Value = "" }); // Empty row for new entries
+        
+        // Add empty query parameter row
+        var emptyParam = new HttpQueryParameter { Key = "", Value = "" };
+        emptyParam.PropertyChanged += QueryParameter_PropertyChanged;
+        _queryParameters.Add(emptyParam);
+
+        // Subscribe to collection changes to wire up property change events
+        _queryParameters.CollectionChanged += (sender, e) =>
+        {
+            if (e.NewItems != null)
+            {
+                foreach (HttpQueryParameter item in e.NewItems)
+                {
+                    item.PropertyChanged += QueryParameter_PropertyChanged;
+                }
+            }
+            if (e.OldItems != null)
+            {
+                foreach (HttpQueryParameter item in e.OldItems)
+                {
+                    item.PropertyChanged -= QueryParameter_PropertyChanged;
+                }
+            }
+            OnPropertyChanged(nameof(FullUrl));
+        };
+    }
+
+    public string Method
+    {
+        get => _method;
+        set
+        {
+            _method = value;
+            OnPropertyChanged(nameof(Method));
+        }
+    }
+
+    public string Url
+    {
+        get => _url;
+        set
+        {
+            _url = value;
+            OnPropertyChanged(nameof(Url));
+            OnPropertyChanged(nameof(FullUrl)); // Update full URL when base URL changes
+        }
+    }
+
+    // Computed property that combines base URL with query parameters
+    public string FullUrl
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_url))
+                return _url;
+
+            var enabledParams = _queryParameters
+                .Where(p => p.IsEnabled && !string.IsNullOrWhiteSpace(p.Key))
+                .ToList();
+
+            if (!enabledParams.Any())
+                return _url;
+
+            var baseUrl = _url.Contains('?') ? _url : _url;
+            var queryString = string.Join("&", enabledParams.Select(p => 
+                $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value ?? "")}"));
+
+            var separator = _url.Contains('?') ? "&" : "?";
+            return $"{baseUrl}{separator}{queryString}";
+        }
+    }
+
+    public ObservableCollection<HttpHeaderItem> Headers
+    {
+        get => _headers;
+        set
+        {
+            _headers = value;
+            OnPropertyChanged(nameof(Headers));
+        }
+    }
+
+    public ObservableCollection<HttpQueryParameter> QueryParameters
+    {
+        get => _queryParameters;
+        set
+        {
+            if (_queryParameters != null)
+            {
+                foreach (var param in _queryParameters)
+                {
+                    param.PropertyChanged -= QueryParameter_PropertyChanged;
+                }
+            }
+
+            _queryParameters = value;
+            
+            if (_queryParameters != null)
+            {
+                foreach (var param in _queryParameters)
+                {
+                    param.PropertyChanged += QueryParameter_PropertyChanged;
+                }
+            }
+
+            OnPropertyChanged(nameof(QueryParameters));
+            OnPropertyChanged(nameof(FullUrl));
+        }
+    }
+
+    public AuthenticationSettings Authentication
+    {
+        get => _authentication;
+        set
+        {
+            _authentication = value;
+            OnPropertyChanged(nameof(Authentication));
+        }
+    }
+
+    private void QueryParameter_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Update FullUrl when any query parameter changes
+        OnPropertyChanged(nameof(FullUrl));
+    }
+
+    public string Body
+    {
+        get => _body;
+        set
+        {
+            _body = value;
+            OnPropertyChanged(nameof(Body));
+        }
+    }
+
+    public string Response
+    {
+        get => _response;
+        set
+        {
+            _response = value;
+            OnPropertyChanged(nameof(Response));
+        }
+    }
+
+    public bool IsLoading
+    {
+        get => _isLoading;
+        set
+        {
+            _isLoading = value;
+            OnPropertyChanged(nameof(IsLoading));
+        }
+    }
+
+    public List<string> Methods { get; } = new List<string> { "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS" };
+
+    public List<AuthenticationType> AuthenticationTypes { get; } = new List<AuthenticationType> 
+    { 
+        AuthenticationType.None, 
+        AuthenticationType.BasicAuth, 
+        AuthenticationType.BearerToken, 
+        AuthenticationType.ApiKey 
+    };
+
+    // Common HTTP headers for autocomplete
+    public static List<string> CommonHeaders { get; } = new List<string>
+    {
+        "Accept",
+        "Accept-Encoding",
+        "Accept-Language",
+        "Authorization",
+        "Cache-Control",
+        "Content-Type",
+        "Content-Length",
+        "Content-Encoding",
+        "Cookie",
+        "Host",
+        "If-Modified-Since",
+        "If-None-Match",
+        "Origin",
+        "Referer",
+        "User-Agent",
+        "X-API-Key",
+        "X-Auth-Token",
+        "X-Requested-With"
+    };
+
+    // Common content types
+    public static List<string> CommonContentTypes { get; } = new List<string>
+    {
+        "application/json",
+        "application/xml",
+        "application/x-www-form-urlencoded",
+        "text/plain",
+        "text/html",
+        "text/xml",
+        "multipart/form-data"
+    };
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
