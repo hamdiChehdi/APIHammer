@@ -439,7 +439,7 @@
                           FontWeight="Medium"
                           Foreground="{StaticResource TextSecondary}"
                           Margin="0,0,8,0"/>
-                <Button Content="📁 New Collection" 
+                <Button Content="New Collection" 
                         Click="CreateNewCollection_Click" 
                         Style="{StaticResource ModernButtonStyle}"
                         Margin="0,0,8,0"
@@ -483,7 +483,7 @@
                           Fill="{StaticResource DarkBorder}" 
                           Margin="0,4"/>
                 
-                <TextBlock Text="💡 Tip: Right-click items to rename or delete" 
+                <TextBlock Text="Tip: Right-click items to rename or delete" 
                           VerticalAlignment="Center" 
                           Margin="16,0,0,0"
                           FontSize="11"
@@ -540,19 +540,19 @@
                         BorderThickness="0,0,0,1"
                         Padding="12,8">
                     <WrapPanel Orientation="Horizontal">
-                        <Button Content="📁+ New Collection" 
+                        <Button Content="+ New Collection" 
                                 Click="CreateNewCollection_Click"
                                 Style="{StaticResource ModernButtonStyle}"
                                 FontSize="11"
                                 Padding="8,4"
                                 Margin="0,0,4,4"/>
-                        <Button Content="✏️ Rename" 
+                        <Button Content="Rename" 
                                 Click="RenameCollection_Click"
                                 Style="{StaticResource SecondaryButtonStyle}"
                                 FontSize="11"
                                 Padding="8,4"
                                 Margin="0,0,4,4"/>
-                        <Button Content="🗑️ Delete" 
+                        <Button Content="Delete" 
                                 Click="DeleteCollection_Click"
                                 Style="{StaticResource SecondaryButtonStyle}"
                                 FontSize="11"
@@ -572,7 +572,8 @@
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate ItemsSource="{Binding Tabs}">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="📁" Margin="0,0,6,0" FontSize="14"/>
+                                <TextBlock Text="[F]" Margin="0,0,6,0" FontSize="14" 
+                                           Foreground="{StaticResource AccentBlue}" FontWeight="Bold"/>
                                 <TextBlock Text="{Binding Name}" 
                                            Foreground="{StaticResource TextPrimary}"
                                            FontWeight="Medium"
@@ -682,8 +683,9 @@
                            Background="{StaticResource AccentBlue}"
                            CornerRadius="40"
                            Margin="0,0,0,24">
-                        <TextBlock Text="⚡"
-                                  FontSize="36"
+                        <TextBlock Text="API"
+                                  FontSize="18"
+                                  FontWeight="Bold"
                                   HorizontalAlignment="Center"
                                   VerticalAlignment="Center"
                                   Foreground="White"/>
@@ -712,7 +714,7 @@
                     
                     <StackPanel Orientation="Horizontal" 
                                HorizontalAlignment="Center">
-                        <Button Content="📁 Create Collection"
+                        <Button Content="Create Collection"
                                Click="CreateNewCollection_Click"
                                Style="{StaticResource ModernButtonStyle}"
                                Margin="0,0,12,0"

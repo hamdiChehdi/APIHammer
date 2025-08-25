@@ -93,6 +93,26 @@ namespace APIHammerUI.Views
             }
         }
 
+        private void PreviewButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is HttpRequest httpRequest)
+            {
+                try
+                {
+                    var previewDialog = new HttpRequestPreviewDialog(httpRequest)
+                    {
+                        Owner = Window.GetWindow(this)
+                    };
+                    previewDialog.ShowDialog();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error opening request preview: {ex.Message}", "Error", 
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
             if (DataContext is not HttpRequest httpRequest)

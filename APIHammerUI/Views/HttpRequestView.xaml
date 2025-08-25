@@ -1,4 +1,4 @@
-<UserControl x:Class="APIHammerUI.Views.HttpRequestView"
+﻿<UserControl x:Class="APIHammerUI.Views.HttpRequestView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -32,7 +32,8 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="120"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="120"/>
                 </Grid.ColumnDefinitions>
 
                 <ComboBox Grid.Column="0" 
@@ -49,6 +50,19 @@
                          FontFamily="Consolas"/>
 
                 <Button Grid.Column="2" 
+                        Click="PreviewButton_Click"
+                        Style="{StaticResource IconButtonStyle}"
+                        Foreground="{StaticResource AccentBlue}"
+                        Padding="12,8"
+                        FontSize="12"
+                        Margin="5,0,10,0"
+                        ToolTip="Preview the complete HTTP request before sending">
+
+                    <TextBlock Text="👁️" FontFamily="Segoe UI Emoji" FontSize="18" 
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+
+                <Button Grid.Column="3" 
                         Content="Send Request" 
                         Click="SendButton_Click"
                         IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
@@ -535,6 +549,77 @@
                            FontWeight="Medium" 
                            VerticalAlignment="Center"
                            Foreground="{StaticResource TextPrimary}"/>
+                
+                <!-- Response Metadata -->
+                <StackPanel Grid.Column="2" 
+                           Orientation="Horizontal"
+                           VerticalAlignment="Center">
+                    
+                    <!-- Response Time -->
+                    <Border Background="{StaticResource DarkCard}"
+                            BorderBrush="{StaticResource DarkBorder}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="8,4"
+                            Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Time"
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       Margin="0,0,4,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextMuted}"/>
+                            <TextBlock Text="{Binding ResponseTimeFormatted, Mode=OneWay}"
+                                       FontSize="11"
+                                       FontWeight="Medium"
+                                       Foreground="{StaticResource AccentBlue}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Response Size -->
+                    <Border Background="{StaticResource DarkCard}"
+                            BorderBrush="{StaticResource DarkBorder}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="8,4"
+                            Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Size"
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       Margin="0,0,4,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextMuted}"/>
+                            <TextBlock Text="{Binding ResponseSizeFormatted, Mode=OneWay}"
+                                       FontSize="11"
+                                       FontWeight="Medium"
+                                       Foreground="{StaticResource SuccessGreen}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Request DateTime -->
+                    <Border Background="{StaticResource DarkCard}"
+                            BorderBrush="{StaticResource DarkBorder}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="8,4">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Sent"
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       Margin="0,0,4,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextMuted}"/>
+                            <TextBlock Text="{Binding RequestDateTimeFormatted, Mode=OneWay}"
+                                       FontSize="11"
+                                       FontWeight="Medium"
+                                       Foreground="{StaticResource TextSecondary}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </Grid>
 
             <!-- Response Section -->
