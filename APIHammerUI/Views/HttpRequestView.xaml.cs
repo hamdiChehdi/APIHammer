@@ -93,6 +93,82 @@ namespace APIHammerUI.Views
             }
         }
 
+        private void QuickAddHeader_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is string headerName && DataContext is HttpRequest httpRequest)
+            {
+                // Check if header already exists
+                var existingHeader = httpRequest.Headers.FirstOrDefault(h => 
+                    h.Key.Equals(headerName, StringComparison.OrdinalIgnoreCase));
+
+                if (existingHeader != null)
+                {
+                    // Header exists, just enable it and focus on value field
+                    existingHeader.IsEnabled = true;
+                    return;
+                }
+
+                // Find the first empty header row or create a new one
+                var emptyHeader = httpRequest.Headers.FirstOrDefault(h => string.IsNullOrWhiteSpace(h.Key));
+                
+                if (emptyHeader != null)
+                {
+                    // Use existing empty row
+                    emptyHeader.Key = headerName;
+                    emptyHeader.Value = GetDefaultValueForHeader(headerName);
+                    emptyHeader.IsEnabled = true;
+                }
+                else
+                {
+                    // Create new header
+                    var newHeader = new HttpHeaderItem 
+                    { 
+                        Key = headerName, 
+                        Value = GetDefaultValueForHeader(headerName),
+                        IsEnabled = true 
+                    };
+                    
+                    // Insert before the last empty row if it exists
+                    var lastEmptyIndex = httpRequest.Headers.Count - 1;
+                    if (lastEmptyIndex >= 0 && string.IsNullOrWhiteSpace(httpRequest.Headers[lastEmptyIndex].Key))
+                    {
+                        httpRequest.Headers.Insert(lastEmptyIndex, newHeader);
+                    }
+                    else
+                    {
+                        httpRequest.Headers.Add(newHeader);
+                        // Add a new empty row
+                        httpRequest.Headers.Add(new HttpHeaderItem { Key = "", Value = "" });
+                    }
+                }
+            }
+        }
+
+        private string GetDefaultValueForHeader(string headerName)
+        {
+            // Get suggested values from the model
+            if (HttpRequest.HeaderValueSuggestions.TryGetValue(headerName, out var suggestions) && suggestions.Any())
+            {
+                return suggestions.First();
+            }
+
+            // Provide some smart defaults
+            return headerName switch
+            {
+                "Content-Type" => "application/json",
+                "Accept" => "application/json",
+                "Accept-Encoding" => "gzip, deflate",
+                "Cache-Control" => "no-cache",
+                "Connection" => "keep-alive",
+                "User-Agent" => "API Hammer/1.0",
+                "X-Requested-With" => "XMLHttpRequest",
+                "Access-Control-Allow-Origin" => "*",
+                "Access-Control-Allow-Methods" => "GET, POST, PUT, DELETE",
+                "Access-Control-Allow-Headers" => "Content-Type, Authorization",
+                _ => ""
+            };
+        }
+
         private void PreviewButton_Click(object sender, RoutedEventArgs e)
         {
             if (DataContext is HttpRequest httpRequest)

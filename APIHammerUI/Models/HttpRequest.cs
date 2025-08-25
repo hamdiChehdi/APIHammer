@@ -201,8 +201,7 @@ public class HttpRequest : INotifyPropertyChanged
         _queryParameters = new ObservableCollection<HttpQueryParameter>();
         _authentication = new AuthenticationSettings();
         
-        // Add default headers
-        _headers.Add(new HttpHeaderItem { Key = "Content-Type", Value = "application/json" });
+        // Add empty header row only
         _headers.Add(new HttpHeaderItem { Key = "", Value = "" }); // Empty row for new entries
         
         // Add empty query parameter row
@@ -422,39 +421,152 @@ public class HttpRequest : INotifyPropertyChanged
         AuthenticationType.ApiKey 
     };
 
-    // Common HTTP headers for autocomplete
-    public static List<string> CommonHeaders { get; } = new List<string>
+    // Comprehensive HTTP headers organized by category
+    public static Dictionary<string, List<string>> HeaderCategories { get; } = new Dictionary<string, List<string>>
     {
-        "Accept",
-        "Accept-Encoding",
-        "Accept-Language",
-        "Authorization",
-        "Cache-Control",
-        "Content-Type",
-        "Content-Length",
-        "Content-Encoding",
-        "Cookie",
-        "Host",
-        "If-Modified-Since",
-        "If-None-Match",
-        "Origin",
-        "Referer",
-        "User-Agent",
-        "X-API-Key",
-        "X-Auth-Token",
-        "X-Requested-With"
+        ["Content"] = new List<string>
+        {
+            "Content-Type",
+            "Content-Length",
+            "Content-Encoding",
+            "Content-Language",
+            "Content-Location",
+            "Content-Range",
+            "Content-Disposition",
+            "Content-Security-Policy"
+        },
+        ["Accept"] = new List<string>
+        {
+            "Accept",
+            "Accept-Charset",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Ranges"
+        },
+        ["Authentication"] = new List<string>
+        {
+            "Authorization",
+            "WWW-Authenticate",
+            "Proxy-Authorization",
+            "Proxy-Authenticate"
+        },
+        ["Caching"] = new List<string>
+        {
+            "Cache-Control",
+            "ETag",
+            "Expires",
+            "Last-Modified",
+            "If-Match",
+            "If-None-Match",
+            "If-Modified-Since",
+            "If-Unmodified-Since",
+            "If-Range"
+        },
+        ["CORS"] = new List<string>
+        {
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Methods",
+            "Access-Control-Allow-Headers",
+            "Access-Control-Allow-Credentials",
+            "Access-Control-Expose-Headers",
+            "Access-Control-Max-Age",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers",
+            "Origin"
+        },
+        ["Custom/API"] = new List<string>
+        {
+            "X-API-Key",
+            "X-Auth-Token",
+            "X-Requested-With",
+            "X-Forwarded-For",
+            "X-Forwarded-Proto",
+            "X-Real-IP",
+            "X-Rate-Limit",
+            "X-Request-ID",
+            "X-Correlation-ID"
+        },
+        ["Client Info"] = new List<string>
+        {
+            "User-Agent",
+            "Referer",
+            "Host",
+            "Origin"
+        },
+        ["Connection"] = new List<string>
+        {
+            "Connection",
+            "Keep-Alive",
+            "Upgrade",
+            "Transfer-Encoding",
+            "TE"
+        }
     };
 
-    // Common content types
-    public static List<string> CommonContentTypes { get; } = new List<string>
+    // Flat list of all common headers (for backward compatibility and quick access)
+    public static List<string> CommonHeaders { get; } = HeaderCategories.Values.SelectMany(x => x).Distinct().OrderBy(x => x).ToList();
+
+    // Header values suggestions based on header name
+    public static Dictionary<string, List<string>> HeaderValueSuggestions { get; } = new Dictionary<string, List<string>>
     {
-        "application/json",
-        "application/xml",
-        "application/x-www-form-urlencoded",
-        "text/plain",
-        "text/html",
-        "text/xml",
-        "multipart/form-data"
+        ["Content-Type"] = new List<string>
+        {
+            "application/json",
+            "application/xml",
+            "application/x-www-form-urlencoded",
+            "multipart/form-data",
+            "text/plain",
+            "text/html",
+            "text/css",
+            "text/javascript",
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "application/pdf",
+            "application/octet-stream"
+        },
+        ["Accept"] = new List<string>
+        {
+            "application/json",
+            "application/xml",
+            "text/html",
+            "text/plain",
+            "*/*"
+        },
+        ["Accept-Encoding"] = new List<string>
+        {
+            "gzip",
+            "deflate",
+            "br",
+            "gzip, deflate",
+            "gzip, deflate, br"
+        },
+        ["Cache-Control"] = new List<string>
+        {
+            "no-cache",
+            "no-store",
+            "max-age=3600",
+            "must-revalidate",
+            "public",
+            "private"
+        },
+        ["Connection"] = new List<string>
+        {
+            "keep-alive",
+            "close"
+        },
+        ["Access-Control-Allow-Methods"] = new List<string>
+        {
+            "GET, POST, PUT, DELETE",
+            "GET, POST, OPTIONS",
+            "*"
+        },
+        ["Access-Control-Allow-Headers"] = new List<string>
+        {
+            "Content-Type, Authorization",
+            "Content-Type, X-Requested-With",
+            "*"
+        }
     };
 
     public event PropertyChangedEventHandler? PropertyChanged;

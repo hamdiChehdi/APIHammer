@@ -6,6 +6,7 @@
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800"
              Background="#3C3C3C">
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Margin="24">
             <Grid.RowDefinitions>
@@ -108,16 +109,16 @@
                             <Setter.Value>
                                 <ControlTemplate TargetType="TabItem">
                                     <Border x:Name="Border"
-                                            Background="{TemplateBinding Background}"
-                                            BorderBrush="{TemplateBinding BorderBrush}"
-                                            BorderThickness="{TemplateBinding BorderThickness}"
-                                            Padding="{TemplateBinding Padding}"
-                                            CornerRadius="6,6,0,0"
-                                            Margin="{TemplateBinding Margin}">
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}"
+                            CornerRadius="6,6,0,0"
+                            Margin="{TemplateBinding Margin}">
                                         <ContentPresenter x:Name="ContentSite"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalAlignment="Center"
-                                                        ContentSource="Header"/>
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"
+                                        ContentSource="Header"/>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsSelected" Value="True">
@@ -135,120 +136,173 @@
                         </Setter>
                     </Style>
                 </TabControl.Resources>
+                <!-- Headers Tab with Suggestions -->
+                <TabItem Header="Headers">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="300"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- Headers Editor (Left Side) -->
+                        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Padding="16">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <TextBlock Grid.Column="0"
+                                               Text="Configure HTTP request headers" 
+                                               FontSize="12" 
+                                               Foreground="{StaticResource TextMuted}"/>
+                                    
+                                    <Button Grid.Column="1"
+                                            Content="+ Add Header"
+                                            Click="AddHeader_Click"
+                                            Style="{StaticResource IconButtonStyle}"
+                                            Foreground="{StaticResource AccentBlue}"
+                                            Padding="8,4"
+                                            FontSize="11"/>
+                                </Grid>
 
-                <!-- Query Parameters Tab -->
-                <TabItem Header="Query Parameters">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
-                        <StackPanel>
-                            <Grid Margin="0,0,0,12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                <TextBlock Grid.Column="0"
-                                           Text="Configure URL query parameters" 
-                                           FontSize="12" 
-                                           Foreground="{StaticResource TextMuted}"/>
-                                
-                                <Button Grid.Column="1"
-                                        Content="+ Add Parameter"
-                                        Click="AddQueryParameter_Click"
-                                        Style="{StaticResource IconButtonStyle}"
-                                        Foreground="{StaticResource AccentBlue}"
-                                        Padding="8,4"
-                                        FontSize="11"/>
-                            </Grid>
+                                <!-- Headers List -->
+                                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                              MaxHeight="300"
+                                              Padding="16">
+                                    <Border Background="{StaticResource DarkPanel}"
+                                        BorderBrush="{StaticResource DarkBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="8">
+                                        <StackPanel>
+                                            
+                                            <!-- Headers Items -->
+                                            <ItemsControl ItemsSource="{Binding Headers}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Margin="0,4">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
 
-                            <!-- Query Parameters List -->
-                            <Border Background="{StaticResource DarkPanel}"
-                                    BorderBrush="{StaticResource DarkBorder}"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    Padding="8">
+                                                            <!-- Enable/Disable Checkbox -->
+                                                            <CheckBox Grid.Column="0"
+                                                                  IsChecked="{Binding IsEnabled}"
+                                                                  Style="{StaticResource DarkCheckBoxStyle}"
+                                                                  VerticalAlignment="Center"
+                                                                  Margin="0,0,8,0"/>
+
+                                                            <!-- Key TextBox -->
+                                                            <TextBox Grid.Column="1"
+                                                                 Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Style="{StaticResource DarkTextBoxStyle}"
+                                                                 Margin="0,0,8,0"
+                                                                 Tag="Key"
+                                                                 GotFocus="TextBox_GotFocus"/>
+
+                                                            <!-- Value TextBox -->
+                                                            <TextBox Grid.Column="2"
+                                                                 Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Style="{StaticResource DarkTextBoxStyle}"
+                                                                 Margin="0,0,8,0"
+                                                                 Tag="Value"
+                                                                 GotFocus="TextBox_GotFocus"/>
+
+                                                            <!-- Delete Button -->
+                                                            <Button Grid.Column="3"
+                                                                Content="X"
+                                                                Style="{StaticResource DeleteButtonStyle}"
+                                                                Click="DeleteHeader_Click"
+                                                                Tag="{Binding}"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- Header Suggestions Panel (Right Side) -->
+                        <Border Grid.Column="1" 
+                                Background="{StaticResource DarkBackground}"
+                                BorderBrush="{StaticResource DarkBorder}"
+                                BorderThickness="1,0,0,0"
+                                MaxHeight="300"
+                                Padding="16">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel>
-                                    <!-- Parameter Headers -->
-                                    <Grid Margin="0,0,0,8">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Common Headers" 
+                                               FontSize="13" 
+                                               FontWeight="Medium"
+                                               Foreground="{StaticResource TextPrimary}"
+                                               Margin="0,0,0,12"/>
+                                    
+                                    <TextBlock Text="Click any header below to add it quickly" 
+                                               FontSize="11" 
+                                               Foreground="{StaticResource TextMuted}"
+                                               Margin="0,0,0,16"/>
 
-                                        <TextBlock Grid.Column="0" Text="" Width="24"/>
-                                        <TextBlock Grid.Column="1" 
-                                                   Text="Parameter" 
-                                                   Foreground="{StaticResource TextMuted}"
-                                                   FontSize="11"
-                                                   FontWeight="Medium"
-                                                   Margin="8,0"/>
-                                        <TextBlock Grid.Column="2" 
-                                                   Text="Value" 
-                                                   Foreground="{StaticResource TextMuted}"
-                                                   FontSize="11"
-                                                   FontWeight="Medium"
-                                                   Margin="8,0"/>
-                                        <TextBlock Grid.Column="3" Text="" Width="24"/>
-                                    </Grid>
+                                    <!-- Content Headers -->
+                                    <StackPanel Margin="0,0,0,16">
+                                        <TextBlock Text="Content" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
+                                        <Button Content="Content-Type" Click="QuickAddHeader_Click" Tag="Content-Type" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Content-Length" Click="QuickAddHeader_Click" Tag="Content-Length" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Content-Encoding" Click="QuickAddHeader_Click" Tag="Content-Encoding" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Content-Disposition" Click="QuickAddHeader_Click" Tag="Content-Disposition" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                    </StackPanel>
 
-                                    <!-- Query Parameters Items -->
-                                    <ItemsControl ItemsSource="{Binding QueryParameters}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid Margin="0,4">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
+                                    <!-- Accept Headers -->
+                                    <StackPanel Margin="0,0,0,16">
+                                        <TextBlock Text="Accept" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
+                                        <Button Content="Accept" Click="QuickAddHeader_Click" Tag="Accept" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Accept-Encoding" Click="QuickAddHeader_Click" Tag="Accept-Encoding" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Accept-Language" Click="QuickAddHeader_Click" Tag="Accept-Language" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                    </StackPanel>
 
-                                                    <!-- Enable/Disable Checkbox -->
-                                                    <CheckBox Grid.Column="0"
-                                                              IsChecked="{Binding IsEnabled}"
-                                                              Style="{StaticResource DarkCheckBoxStyle}"
-                                                              VerticalAlignment="Center"
-                                                              Margin="0,0,8,0"/>
+                                    <!-- Authentication Headers -->
+                                    <StackPanel Margin="0,0,0,16">
+                                        <TextBlock Text="Authentication" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
+                                        <Button Content="Authorization" Click="QuickAddHeader_Click" Tag="Authorization" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="WWW-Authenticate" Click="QuickAddHeader_Click" Tag="WWW-Authenticate" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                    </StackPanel>
 
-                                                    <!-- Key TextBox -->
-                                                    <TextBox Grid.Column="1"
-                                                             Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                             Style="{StaticResource DarkTextBoxStyle}"
-                                                             Margin="0,0,8,0"
-                                                             Tag="Parameter"
-                                                             GotFocus="QueryParameter_GotFocus">
-                                                        <TextBox.InputBindings>
-                                                            <KeyBinding Key="Tab" Command="{x:Static ApplicationCommands.NotACommand}"/>
-                                                        </TextBox.InputBindings>
-                                                    </TextBox>
+                                    <!-- CORS Headers -->
+                                    <StackPanel Margin="0,0,0,16">
+                                        <TextBlock Text="CORS" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
+                                        <Button Content="Access-Control-Allow-Origin" Click="QuickAddHeader_Click" Tag="Access-Control-Allow-Origin" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Access-Control-Allow-Methods" Click="QuickAddHeader_Click" Tag="Access-Control-Allow-Methods" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Access-Control-Allow-Headers" Click="QuickAddHeader_Click" Tag="Access-Control-Allow-Headers" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Origin" Click="QuickAddHeader_Click" Tag="Origin" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                    </StackPanel>
 
-                                                    <!-- Value TextBox -->
-                                                    <TextBox Grid.Column="2"
-                                                             Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
-                                                             Style="{StaticResource DarkTextBoxStyle}"
-                                                             Margin="0,0,8,0"
-                                                             Tag="Value"
-                                                             GotFocus="QueryParameter_GotFocus">
-                                                        <TextBox.InputBindings>
-                                                            <KeyBinding Key="Tab" Command="{x:Static ApplicationCommands.NotACommand}"/>
-                                                        </TextBox.InputBindings>
-                                                    </TextBox>
+                                    <!-- Custom/API Headers -->
+                                    <StackPanel Margin="0,0,0,16">
+                                        <TextBlock Text="Custom/API" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
+                                        <Button Content="X-API-Key" Click="QuickAddHeader_Click" Tag="X-API-Key" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="X-Auth-Token" Click="QuickAddHeader_Click" Tag="X-Auth-Token" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="X-Requested-With" Click="QuickAddHeader_Click" Tag="X-Requested-With" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="X-Request-ID" Click="QuickAddHeader_Click" Tag="X-Request-ID" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                    </StackPanel>
 
-                                                    <!-- Delete Button -->
-                                                    <Button Grid.Column="3"
-                                                            Content="X"
-                                                            Style="{StaticResource DeleteButtonStyle}"
-                                                            Click="DeleteQueryParameter_Click"
-                                                            Tag="{Binding}"/>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    <!-- Caching Headers -->
+                                    <StackPanel Margin="0,0,0,16">
+                                        <TextBlock Text="Caching" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
+                                        <Button Content="Cache-Control" Click="QuickAddHeader_Click" Tag="Cache-Control" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="ETag" Click="QuickAddHeader_Click" Tag="ETag" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="If-None-Match" Click="QuickAddHeader_Click" Tag="If-None-Match" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Last-Modified" Click="QuickAddHeader_Click" Tag="Last-Modified" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                    </StackPanel>
                                 </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
                 </TabItem>
 
                 <!-- Authentication Tab -->
@@ -398,8 +452,8 @@
                     </ScrollViewer>
                 </TabItem>
 
-                <!-- Headers Tab -->
-                <TabItem Header="Headers">
+                <!-- Query Parameters Tab -->
+                <TabItem Header="Query Parameters">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
                         <StackPanel>
                             <Grid Margin="0,0,0,12">
@@ -409,27 +463,27 @@
                                 </Grid.ColumnDefinitions>
                                 
                                 <TextBlock Grid.Column="0"
-                                           Text="Configure HTTP request headers" 
+                                           Text="Configure URL query parameters" 
                                            FontSize="12" 
                                            Foreground="{StaticResource TextMuted}"/>
                                 
                                 <Button Grid.Column="1"
-                                        Content="+ Add Header"
-                                        Click="AddHeader_Click"
+                                        Content="+ Add Parameter"
+                                        Click="AddQueryParameter_Click"
                                         Style="{StaticResource IconButtonStyle}"
                                         Foreground="{StaticResource AccentBlue}"
                                         Padding="8,4"
                                         FontSize="11"/>
                             </Grid>
 
-                            <!-- Headers List -->
+                            <!-- Query Parameters List -->
                             <Border Background="{StaticResource DarkPanel}"
                                     BorderBrush="{StaticResource DarkBorder}"
                                     BorderThickness="1"
                                     CornerRadius="4"
                                     Padding="8">
                                 <StackPanel>
-                                    <!-- Header Row -->
+                                    <!-- Parameter Headers -->
                                     <Grid Margin="0,0,0,8">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -440,7 +494,7 @@
 
                                         <TextBlock Grid.Column="0" Text="" Width="24"/>
                                         <TextBlock Grid.Column="1" 
-                                                   Text="Key" 
+                                                   Text="Parameter" 
                                                    Foreground="{StaticResource TextMuted}"
                                                    FontSize="11"
                                                    FontWeight="Medium"
@@ -454,8 +508,8 @@
                                         <TextBlock Grid.Column="3" Text="" Width="24"/>
                                     </Grid>
 
-                                    <!-- Headers Items -->
-                                    <ItemsControl ItemsSource="{Binding Headers}">
+                                    <!-- Query Parameters Items -->
+                                    <ItemsControl ItemsSource="{Binding QueryParameters}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Grid Margin="0,4">
@@ -478,12 +532,8 @@
                                                              Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
                                                              Style="{StaticResource DarkTextBoxStyle}"
                                                              Margin="0,0,8,0"
-                                                             Tag="Key"
-                                                             GotFocus="TextBox_GotFocus">
-                                                        <TextBox.InputBindings>
-                                                            <KeyBinding Key="Tab" Command="{x:Static ApplicationCommands.NotACommand}"/>
-                                                        </TextBox.InputBindings>
-                                                    </TextBox>
+                                                             Tag="Parameter"
+                                                             GotFocus="QueryParameter_GotFocus"/>
 
                                                     <!-- Value TextBox -->
                                                     <TextBox Grid.Column="2"
@@ -491,17 +541,13 @@
                                                              Style="{StaticResource DarkTextBoxStyle}"
                                                              Margin="0,0,8,0"
                                                              Tag="Value"
-                                                             GotFocus="TextBox_GotFocus">
-                                                        <TextBox.InputBindings>
-                                                            <KeyBinding Key="Tab" Command="{x:Static ApplicationCommands.NotACommand}"/>
-                                                        </TextBox.InputBindings>
-                                                    </TextBox>
+                                                             GotFocus="QueryParameter_GotFocus"/>
 
                                                     <!-- Delete Button -->
                                                     <Button Grid.Column="3"
                                                             Content="X"
                                                             Style="{StaticResource DeleteButtonStyle}"
-                                                            Click="DeleteHeader_Click"
+                                                            Click="DeleteQueryParameter_Click"
                                                             Tag="{Binding}"/>
                                                 </Grid>
                                             </DataTemplate>
@@ -536,91 +582,12 @@
             </TabControl>
 
             <!-- Response Section Header -->
-            <Grid Grid.Row="4" Margin="0,0,0,8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                
-                <TextBlock Grid.Column="0"
-                           Text="Response" 
-                           FontSize="14" 
-                           FontWeight="Medium" 
-                           VerticalAlignment="Center"
-                           Foreground="{StaticResource TextPrimary}"/>
-                
-                <!-- Response Metadata -->
-                <StackPanel Grid.Column="2" 
-                           Orientation="Horizontal"
-                           VerticalAlignment="Center">
-                    
-                    <!-- Response Time -->
-                    <Border Background="{StaticResource DarkCard}"
-                            BorderBrush="{StaticResource DarkBorder}"
-                            BorderThickness="1"
-                            CornerRadius="3"
-                            Padding="8,4"
-                            Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Time"
-                                       FontSize="10"
-                                       FontWeight="Bold"
-                                       Margin="0,0,4,0"
-                                       VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock Text="{Binding ResponseTimeFormatted, Mode=OneWay}"
-                                       FontSize="11"
-                                       FontWeight="Medium"
-                                       Foreground="{StaticResource AccentBlue}"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Response Size -->
-                    <Border Background="{StaticResource DarkCard}"
-                            BorderBrush="{StaticResource DarkBorder}"
-                            BorderThickness="1"
-                            CornerRadius="3"
-                            Padding="8,4"
-                            Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Size"
-                                       FontSize="10"
-                                       FontWeight="Bold"
-                                       Margin="0,0,4,0"
-                                       VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock Text="{Binding ResponseSizeFormatted, Mode=OneWay}"
-                                       FontSize="11"
-                                       FontWeight="Medium"
-                                       Foreground="{StaticResource SuccessGreen}"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Request DateTime -->
-                    <Border Background="{StaticResource DarkCard}"
-                            BorderBrush="{StaticResource DarkBorder}"
-                            BorderThickness="1"
-                            CornerRadius="3"
-                            Padding="8,4">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Sent"
-                                       FontSize="10"
-                                       FontWeight="Bold"
-                                       Margin="0,0,4,0"
-                                       VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock Text="{Binding RequestDateTimeFormatted, Mode=OneWay}"
-                                       FontSize="11"
-                                       FontWeight="Medium"
-                                       Foreground="{StaticResource TextSecondary}"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </Grid>
+            <TextBlock Grid.Row="4" 
+                       Text="Response" 
+                       FontSize="14" 
+                       FontWeight="Medium" 
+                       Foreground="{StaticResource TextPrimary}"
+                       Margin="0,0,0,8"/>
 
             <!-- Response Section -->
             <Border Grid.Row="5"
@@ -629,84 +596,16 @@
                     BorderThickness="1"
                     CornerRadius="4"
                     MinHeight="200">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    
-                    <!-- Response Status Bar -->
-                    <Border Grid.Row="0"
-                            Background="{StaticResource DarkPanel}"
-                            BorderBrush="{StaticResource DarkBorder}"
-                            BorderThickness="0,0,0,1"
-                            Padding="12,8">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            
-                            <!-- Status and URL Info -->
-                            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <TextBlock Text="Status:"
-                                           FontSize="11"
-                                           FontWeight="Medium"
-                                           Foreground="{StaticResource TextMuted}"
-                                           Margin="0,0,6,0"
-                                           VerticalAlignment="Center"/>
-                                <TextBlock Text="Ready"
-                                           FontSize="11"
-                                           FontWeight="Medium"
-                                           Foreground="{StaticResource TextSecondary}"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
-                            
-                            <!-- Metadata Summary -->
-                            <StackPanel Grid.Column="1" 
-                                       Orientation="Horizontal">
-                                <TextBlock FontSize="10" 
-                                           Foreground="{StaticResource TextMuted}"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,12,0">
-                                    <Run Text="Time: "/>
-                                    <Run Text="{Binding ResponseTimeFormatted, Mode=OneWay}" 
-                                         Foreground="{StaticResource AccentBlue}"/>
-                                </TextBlock>
-                                
-                                <TextBlock FontSize="10" 
-                                           Foreground="{StaticResource TextMuted}"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,12,0">
-                                    <Run Text="Size: "/>
-                                    <Run Text="{Binding ResponseSizeFormatted, Mode=OneWay}" 
-                                         Foreground="{StaticResource SuccessGreen}"/>
-                                </TextBlock>
-                                
-                                <TextBlock FontSize="10" 
-                                           Foreground="{StaticResource TextMuted}"
-                                           VerticalAlignment="Center">
-                                    <Run Text="Sent: "/>
-                                    <Run Text="{Binding RequestDateTimeFormatted, Mode=OneWay}" 
-                                         Foreground="{StaticResource TextSecondary}"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-                    
-                    <!-- Response Content -->
-                    <TextBox Grid.Row="1"
-                             Text="{Binding Response}"
-                             IsReadOnly="True"
-                             Background="Transparent"
-                             Foreground="{StaticResource TextSecondary}"
-                             BorderThickness="0"
-                             TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto"
-                             Padding="12"
-                             FontFamily="Consolas"
-                             FontSize="12"/>
-                </Grid>
+                <TextBox Text="{Binding Response}"
+                         IsReadOnly="True"
+                         Background="Transparent"
+                         Foreground="{StaticResource TextSecondary}"
+                         BorderThickness="0"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         Padding="12"
+                         FontFamily="Consolas"
+                         FontSize="12"/>
             </Border>
         </Grid>
     </ScrollViewer>
