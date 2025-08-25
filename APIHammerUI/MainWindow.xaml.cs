@@ -12,17 +12,27 @@ namespace APIHammerUI;
 
 public partial class MainWindow : Window, INotifyPropertyChanged
 {
-    private ObservableCollection<RequestTab> _tabs = new();
+    private ObservableCollection<TabCollection> _tabCollections = new();
+    private TabCollection? _selectedCollection;
     private RequestTab? _selectedTab;
 
-    public ObservableCollection<RequestTab> Tabs
+    public ObservableCollection<TabCollection> TabCollections
     {
-        get => _tabs;
+        get => _tabCollections;
         set
         {
-            _tabs = value;
-            OnPropertyChanged(nameof(Tabs));
-            OnPropertyChanged(nameof(HasNoTabs));
+            _tabCollections = value;
+            OnPropertyChanged(nameof(TabCollections));
+        }
+    }
+
+    public TabCollection? SelectedCollection
+    {
+        get => _selectedCollection;
+        set
+        {
+            _selectedCollection = value;
+            OnPropertyChanged(nameof(SelectedCollection));
         }
     }
 
@@ -31,81 +41,111 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         get => _selectedTab;
         set
         {
-            if (_selectedTab != null)
-                _selectedTab.IsSelected = false;
-
             _selectedTab = value;
-            
-            if (_selectedTab != null)
-                _selectedTab.IsSelected = true;
-
             OnPropertyChanged(nameof(SelectedTab));
         }
     }
-
-    public bool HasNoTabs => !Tabs.Any();
 
     public MainWindow()
     {
         InitializeComponent();
         DataContext = this;
 
-        // Subscribe to collection changes to update HasNoTabs property
-        Tabs.CollectionChanged += (s, e) => OnPropertyChanged(nameof(HasNoTabs));
+        // Initialize default collection with a sample tab
+        var defaultCollection = new TabCollection { Name = "Default Collection" };
+        
+        // Add a sample HTTP request
+        var sampleHttpTab = new RequestTab
+        {
+            Name = "Sample HTTP Request",
+            RequestType = RequestType.HTTP
+        };
+        var httpRequest = new HttpRequest();
+        var httpView = new HttpRequestView { DataContext = httpRequest };
+        sampleHttpTab.Content = httpView;
+        defaultCollection.Tabs.Add(sampleHttpTab);
 
-        // Handle double-click on tab explorer items
-        TabExplorer.MouseDoubleClick += TabExplorer_MouseDoubleClick;
-
-        // Handle right-click on tab explorer items for renaming
-        TabExplorer.MouseRightButtonDown += TabExplorer_MouseRightButtonDown;
-
-        // Create a default HTTP tab
-        CreateNewTab(RequestType.HTTP, "New HTTP Request");
+        TabCollections.Add(defaultCollection);
+        SelectedCollection = defaultCollection;
+        
+        // Expand the first collection by default
+        Loaded += (s, e) => ExpandFirstCollection();
     }
 
-    private void TabExplorer_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void ExpandFirstCollection()
     {
-        if (TabExplorer.SelectedItem is RequestTab selectedTab)
+        if (TabExplorerTreeView.Items.Count > 0)
         {
-            SelectedTab = selectedTab;
+            var firstItem = TabExplorerTreeView.ItemContainerGenerator.ContainerFromIndex(0) as TreeViewItem;
+            if (firstItem != null)
+            {
+                firstItem.IsExpanded = true;
+            }
         }
     }
 
-    private void TabExplorer_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    private void CreateNewCollection_Click(object sender, RoutedEventArgs e)
     {
-        // Find the ListBoxItem that was clicked
-        var listBoxItem = FindAncestor<ListBoxItem>((DependencyObject)e.OriginalSource);
-        if (listBoxItem?.DataContext is RequestTab requestTab)
+        var newCollection = new TabCollection { Name = "New Collection" };
+        TabCollections.Add(newCollection);
+        SelectedCollection = newCollection;
+    }
+
+    private void RenameCollection_Click(object sender, RoutedEventArgs e)
+    {
+        if (SelectedCollection == null) return;
+
+        try
         {
-            RenameTab(requestTab);
-            e.Handled = true;
+            var dialog = new RenameTabDialog(SelectedCollection.Name)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                SelectedCollection.Name = dialog.TabName;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            MessageBox.Show($"Error renaming collection: {ex.Message}", "Error", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
-    private void NewHttpTab_Click(object sender, RoutedEventArgs e)
+    private void DeleteCollection_Click(object sender, RoutedEventArgs e)
     {
-        CreateNewTab(RequestType.HTTP, "New HTTP Request");
+        if (SelectedCollection == null) return;
+
+        var result = MessageBox.Show($"Are you sure you want to delete '{SelectedCollection.Name}' and all its tabs?", 
+            "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        
+        if (result == MessageBoxResult.Yes)
+        {
+            TabCollections.Remove(SelectedCollection);
+            SelectedCollection = TabCollections.FirstOrDefault();
+            SelectedTab = null;
+        }
     }
 
-    private void NewWebSocketTab_Click(object sender, RoutedEventArgs e)
+    private void AddTabToCollection(RequestType requestType, string defaultName)
     {
-        CreateNewTab(RequestType.WebSocket, "New WebSocket");
-    }
+        if (SelectedCollection == null) 
+        {
+            // Create a default collection if none exists
+            var defaultCollection = new TabCollection { Name = "Default Collection" };
+            TabCollections.Add(defaultCollection);
+            SelectedCollection = defaultCollection;
+        }
 
-    private void NewGrpcTab_Click(object sender, RoutedEventArgs e)
-    {
-        CreateNewTab(RequestType.gRPC, "New gRPC Request");
-    }
-
-    private void CreateNewTab(RequestType requestType, string defaultName)
-    {
         var tab = new RequestTab
         {
             Name = defaultName,
             RequestType = requestType
         };
 
-        // Create the appropriate content based on request type
         switch (requestType)
         {
             case RequestType.HTTP:
@@ -127,73 +167,51 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 break;
         }
 
-        Tabs.Add(tab);
+        SelectedCollection.Tabs.Add(tab);
         SelectedTab = tab;
     }
 
-    private void CloseTab_Click(object sender, RoutedEventArgs e)
+    private void NewHttpTab_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button button && button.Tag is RequestTab tab)
+        AddTabToCollection(RequestType.HTTP, "New HTTP Request");
+    }
+
+    private void NewWebSocketTab_Click(object sender, RoutedEventArgs e)
+    {
+        AddTabToCollection(RequestType.WebSocket, "New WebSocket");
+    }
+
+    private void NewGrpcTab_Click(object sender, RoutedEventArgs e)
+    {
+        AddTabToCollection(RequestType.gRPC, "New gRPC Request");
+    }
+
+    private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        if (e.NewValue is TabCollection collection)
         {
-            CloseTab(tab);
+            SelectedCollection = collection;
+            // Don't change selected tab when selecting collection
+        }
+        else if (e.NewValue is RequestTab tab)
+        {
+            SelectedTab = tab;
+            // Find the collection that contains this tab
+            var parentCollection = TabCollections.FirstOrDefault(c => c.Tabs.Contains(tab));
+            if (parentCollection != null)
+            {
+                SelectedCollection = parentCollection;
+            }
         }
     }
 
     private void RenameTabMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuItem menuItem && menuItem.Tag is RequestTab tab)
-        {
-            RenameTab(tab);
-        }
-    }
+        if (SelectedTab == null) return;
 
-    private void CloseTabMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is MenuItem menuItem && menuItem.Tag is RequestTab tab)
-        {
-            CloseTab(tab);
-        }
-    }
-
-    private void CloseTab(RequestTab tab)
-    {
-        var index = Tabs.IndexOf(tab);
-        Tabs.Remove(tab);
-
-        // Select adjacent tab if available
-        if (Tabs.Any())
-        {
-            if (index >= Tabs.Count)
-                index = Tabs.Count - 1;
-            SelectedTab = Tabs[index];
-        }
-        else
-        {
-            SelectedTab = null;
-        }
-    }
-
-    protected override void OnPreviewMouseRightButtonDown(MouseButtonEventArgs e)
-    {
-        // Handle right-click on traditional tab headers for renaming
-        if (e.Source is FrameworkElement element)
-        {
-            var tab = FindAncestor<TabItem>(element);
-            if (tab?.DataContext is RequestTab requestTab)
-            {
-                RenameTab(requestTab);
-                e.Handled = true;
-                return;
-            }
-        }
-        base.OnPreviewMouseRightButtonDown(e);
-    }
-
-    private void RenameTab(RequestTab tab)
-    {
         try
         {
-            var dialog = new RenameTabDialog(tab.Name)
+            var dialog = new RenameTabDialog(SelectedTab.Name)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -201,24 +219,34 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
             if (dialog.ShowDialog() == true)
             {
-                tab.Name = dialog.TabName;
+                SelectedTab.Name = dialog.TabName;
             }
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
-            MessageBox.Show($"Error opening rename dialog: {ex.Message}", "Error", 
+            MessageBox.Show($"{ex.Message}", "Error", 
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
-    private static T? FindAncestor<T>(DependencyObject? dependencyObject) where T : DependencyObject
+    private void CloseTabMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        var parent = VisualTreeHelper.GetParent(dependencyObject);
+        if (SelectedTab == null || SelectedCollection == null) return;
 
-        if (parent == null) return null;
+        SelectedCollection.Tabs.Remove(SelectedTab);
+        SelectedTab = SelectedCollection.Tabs.FirstOrDefault();
+    }
 
-        var parentT = parent as T;
-        return parentT ?? FindAncestor<T>(parent);
+    private void CloseTab_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is RequestTab tab && SelectedCollection != null)
+        {
+            SelectedCollection.Tabs.Remove(tab);
+            if (SelectedTab == tab)
+            {
+                SelectedTab = SelectedCollection.Tabs.FirstOrDefault();
+            }
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

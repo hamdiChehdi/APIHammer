@@ -1,10 +1,10 @@
 ﻿<Window x:Class="APIHammerUI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:APIHammerUI"
         xmlns:converters="clr-namespace:APIHammerUI.Converters"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
         Title="API Hammer - API Testing Tool" Height="700" Width="1400"
         WindowStartupLocation="CenterScreen"
@@ -309,6 +309,109 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- TreeViewItem Style -->
+        <Style TargetType="TreeViewItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TreeViewItem">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            
+                            <!-- Header -->
+                            <Border x:Name="Border"
+                                    Grid.Row="0"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Padding="{TemplateBinding Padding}"
+                                    CornerRadius="4">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <!-- Expander Button -->
+                                    <ToggleButton x:Name="Expander"
+                                                  Grid.Column="0"
+                                                  ClickMode="Press"
+                                                  IsChecked="{Binding Path=IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
+                                                  Background="Transparent"
+                                                  BorderThickness="0"
+                                                  Width="16"
+                                                  Height="16"
+                                                  Margin="0,0,4,0">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border Background="{TemplateBinding Background}">
+                                                    <Path x:Name="ExpandPath"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"
+                                                          Data="M 4 0 L 8 4 L 4 8 Z"
+                                                          Fill="{StaticResource TextMuted}"
+                                                          Stroke="{StaticResource TextMuted}"
+                                                          StrokeThickness="0"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter TargetName="ExpandPath" Property="Data" Value="M 0 4 L 4 8 L 8 4 Z"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+                                    
+                                    <!-- Content -->
+                                    <ContentPresenter x:Name="PART_Header"
+                                                      Grid.Column="1"
+                                                      ContentSource="Header"
+                                                      HorizontalAlignment="Left"
+                                                      VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Children -->
+                            <ItemsPresenter x:Name="ItemsHost"
+                                            Grid.Row="1"
+                                            Margin="16,0,0,0"/>
+                        </Grid>
+                        
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="False">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource AccentBlue}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource DarkCard}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- TreeView Style -->
+        <Style TargetType="TreeView">
+            <Setter Property="Background" Value="{StaticResource DarkPanel}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource DarkBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8"/>
+        </Style>
     </Window.Resources>
 
     <Grid Background="{StaticResource DarkBackground}">
@@ -329,27 +432,61 @@
                 BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" 
                         Margin="16,12">
+                <!-- Collection Management -->
+                <TextBlock Text="Collections:" 
+                          VerticalAlignment="Center" 
+                          FontSize="12"
+                          FontWeight="Medium"
+                          Foreground="{StaticResource TextSecondary}"
+                          Margin="0,0,8,0"/>
+                <Button Content="📁 New Collection" 
+                        Click="CreateNewCollection_Click" 
+                        Style="{StaticResource ModernButtonStyle}"
+                        Margin="0,0,8,0"
+                        Padding="12,6"
+                        FontSize="12"/>
+                
+                <Rectangle Width="1" 
+                          Fill="{StaticResource DarkBorder}" 
+                          Margin="8,4,16,4"/>
+                
+                <!-- Quick Request Creation -->
+                <TextBlock Text="Quick Add:" 
+                          VerticalAlignment="Center" 
+                          FontSize="12"
+                          FontWeight="Medium"
+                          Foreground="{StaticResource TextSecondary}"
+                          Margin="0,0,8,0"/>
                 <Button Content="+ HTTP" 
                         Click="NewHttpTab_Click" 
                         Style="{StaticResource ModernButtonStyle}"
-                        Margin="0,0,8,0"/>
+                        Background="{StaticResource SuccessGreen}"
+                        Margin="0,0,6,0"
+                        Padding="10,6"
+                        FontSize="11"/>
                 <Button Content="+ WebSocket" 
                         Click="NewWebSocketTab_Click" 
-                        Style="{StaticResource SecondaryButtonStyle}"
-                        Margin="0,0,8,0"/>
+                        Style="{StaticResource ModernButtonStyle}"
+                        Background="{StaticResource WarningOrange}"
+                        Margin="0,0,6,0"
+                        Padding="10,6"
+                        FontSize="11"/>
                 <Button Content="+ gRPC" 
                         Click="NewGrpcTab_Click" 
-                        Style="{StaticResource SecondaryButtonStyle}"
-                        Margin="0,0,16,0"/>
+                        Style="{StaticResource ModernButtonStyle}"
+                        Background="{StaticResource AccentBlue}"
+                        Margin="0,0,16,0"
+                        Padding="10,6"
+                        FontSize="11"/>
                 
                 <Rectangle Width="1" 
                           Fill="{StaticResource DarkBorder}" 
                           Margin="0,4"/>
                 
-                <TextBlock Text="Right-click tabs to rename or close" 
+                <TextBlock Text="💡 Tip: Right-click items to rename or delete" 
                           VerticalAlignment="Center" 
                           Margin="16,0,0,0"
-                          FontSize="12"
+                          FontSize="11"
                           Foreground="{StaticResource TextMuted}"/>
             </StackPanel>
         </Border>
@@ -362,57 +499,149 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 
-                <!-- Tab Explorer Header -->
+                <!-- Collections Header -->
                 <Border Grid.Row="0" 
                         Background="{StaticResource DarkCard}"
                         BorderBrush="{StaticResource DarkBorder}"
                         BorderThickness="0,0,0,1"
                         Padding="16,12">
-                    <TextBlock Text="ACTIVE TABS" 
-                               FontWeight="Bold" 
-                               FontSize="11"
-                               Foreground="{StaticResource TextMuted}"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="COLLECTIONS" 
+                                   FontWeight="Bold" 
+                                   FontSize="11"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextMuted}"/>
+                        <Button Grid.Column="1"
+                                Content="+"
+                                Click="CreateNewCollection_Click"
+                                ToolTip="Create New Collection"
+                                Style="{StaticResource ModernButtonStyle}"
+                                Width="24"
+                                Height="24"
+                                Padding="0"
+                                FontSize="14"
+                                FontWeight="Bold"/>
+                    </Grid>
+                </Border>
+
+                <!-- Collection Management Toolbar -->
+                <Border Grid.Row="1" 
+                        Background="{StaticResource DarkPanel}"
+                        BorderBrush="{StaticResource DarkBorder}"
+                        BorderThickness="0,0,0,1"
+                        Padding="12,8">
+                    <WrapPanel Orientation="Horizontal">
+                        <Button Content="📁+ New Collection" 
+                                Click="CreateNewCollection_Click"
+                                Style="{StaticResource ModernButtonStyle}"
+                                FontSize="11"
+                                Padding="8,4"
+                                Margin="0,0,4,4"/>
+                        <Button Content="✏️ Rename" 
+                                Click="RenameCollection_Click"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                FontSize="11"
+                                Padding="8,4"
+                                Margin="0,0,4,4"/>
+                        <Button Content="🗑️ Delete" 
+                                Click="DeleteCollection_Click"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                FontSize="11"
+                                Padding="8,4"
+                                Margin="0,0,0,4"/>
+                    </WrapPanel>
                 </Border>
                 
-                <!-- Tab List -->
-                <ListBox Grid.Row="1" 
-                         x:Name="TabExplorer"
-                         ItemsSource="{Binding Tabs}"
-                         SelectedItem="{Binding SelectedTab}"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ItemContainerStyle="{StaticResource TabExplorerItemStyle}">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <VirtualizingStackPanel/>
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                </ListBox>
+                <!-- Explorer TreeView -->
+                <TreeView Grid.Row="2" 
+                          x:Name="TabExplorerTreeView"
+                          ItemsSource="{Binding TabCollections}" 
+                          SelectedItemChanged="TreeView_SelectedItemChanged"
+                          Margin="8"
+                          Background="Transparent"
+                          BorderThickness="0">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding Tabs}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📁" Margin="0,0,6,0" FontSize="14"/>
+                                <TextBlock Text="{Binding Name}" 
+                                           Foreground="{StaticResource TextPrimary}"
+                                           FontWeight="Medium"
+                                           FontSize="13"/>
+                                <TextBlock Text="{Binding Tabs.Count, StringFormat='({0})'}" 
+                                           Foreground="{StaticResource TextMuted}"
+                                           FontSize="11"
+                                           Margin="6,0,0,0"/>
+                            </StackPanel>
+                            <HierarchicalDataTemplate.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <Border Background="{Binding RequestType, Converter={StaticResource RequestTypeColorConverter}}"
+                                                CornerRadius="3"
+                                                Padding="6,2"
+                                                Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding RequestType, Converter={StaticResource RequestTypeIconConverter}}"
+                                                       Foreground="White"
+                                                       FontSize="8"
+                                                       FontWeight="Bold"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding Name}" 
+                                                   Foreground="{StaticResource TextPrimary}"
+                                                   FontSize="12"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </HierarchicalDataTemplate.ItemTemplate>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
                 
-                <!-- Empty State -->
-                <StackPanel Grid.Row="1" 
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           Visibility="{Binding HasNoTabs, Converter={StaticResource bool2VisibilityConverter}}">
-                    <Ellipse Width="48" Height="48" 
-                            Fill="{StaticResource DarkCard}"
-                            Margin="0,0,0,16"/>
-                    <TextBlock Text="No tabs open"
-                              HorizontalAlignment="Center"
-                              FontSize="14"
-                              Foreground="{StaticResource TextMuted}"
-                              Margin="0,0,0,8"/>
-                    <TextBlock Text="Create a new request to get started"
-                              HorizontalAlignment="Center"
-                              FontSize="12"
-                              Foreground="{StaticResource TextMuted}"
-                              TextWrapping="Wrap"
-                              TextAlignment="Center"/>
-                </StackPanel>
+                <!-- Quick Add Tabs Section -->
+                <Border Grid.Row="2" 
+                        Background="{StaticResource DarkCard}"
+                        BorderBrush="{StaticResource DarkBorder}"
+                        BorderThickness="0,1,0,0"
+                        Padding="12,8"
+                        VerticalAlignment="Bottom">
+                    <StackPanel>
+                        <TextBlock Text="QUICK ADD"
+                                   FontWeight="Bold" 
+                                   FontSize="10"
+                                   Foreground="{StaticResource TextMuted}"
+                                   Margin="0,0,0,8"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="HTTP" 
+                                    Click="NewHttpTab_Click"
+                                    Style="{StaticResource ModernButtonStyle}"
+                                    Background="{StaticResource SuccessGreen}"
+                                    Padding="6,3"
+                                    FontSize="10"
+                                    Margin="0,0,4,0"/>
+                            <Button Content="WS" 
+                                    Click="NewWebSocketTab_Click"
+                                    Style="{StaticResource ModernButtonStyle}"
+                                    Background="{StaticResource WarningOrange}"
+                                    Padding="6,3"
+                                    FontSize="10"
+                                    Margin="0,0,4,0"/>
+                            <Button Content="gRPC" 
+                                    Click="NewGrpcTab_Click"
+                                    Style="{StaticResource ModernButtonStyle}"
+                                    Background="{StaticResource AccentBlue}"
+                                    Padding="6,3"
+                                    FontSize="10"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
 
@@ -425,21 +654,26 @@
 
         <!-- Main Content Area -->
         <Grid Grid.Row="1" Grid.Column="2" Background="{StaticResource DarkCard}">
-            <!-- Tab Control -->
-            <TabControl x:Name="MainTabControl"
-                        ItemsSource="{Binding Tabs}"
-                        SelectedItem="{Binding SelectedTab}"
-                        TabStripPlacement="Top">
-                <TabControl.ContentTemplate>
-                    <DataTemplate>
-                        <ContentPresenter Content="{Binding Content}"/>
-                    </DataTemplate>
-                </TabControl.ContentTemplate>
-            </TabControl>
-
-            <!-- Welcome Screen -->
-            <Grid Visibility="{Binding HasNoTabs, Converter={StaticResource bool2VisibilityConverter}}"
-                  Background="{StaticResource DarkCard}">
+            <!-- Main Content -->
+            <ContentPresenter x:Name="MainContentPresenter" 
+                              Content="{Binding SelectedTab.Content}"
+                              Margin="0"/>
+            
+            <!-- Welcome Screen / Placeholder when no tab is selected -->
+            <Border x:Name="PlaceholderPanel"
+                    Background="{StaticResource DarkCard}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedTab}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                
+                <!-- Welcome Content -->
                 <StackPanel HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            MaxWidth="400">
@@ -467,24 +701,39 @@
                               HorizontalAlignment="Center"
                               Foreground="{StaticResource TextSecondary}"
                               TextAlignment="Center"
+                              Margin="0,0,0,24"/>
+                    
+                    <TextBlock Text="Get started by creating a collection and adding requests"
+                              FontSize="14"
+                              HorizontalAlignment="Center"
+                              Foreground="{StaticResource TextMuted}"
+                              TextAlignment="Center"
                               Margin="0,0,0,32"/>
                     
                     <StackPanel Orientation="Horizontal" 
                                HorizontalAlignment="Center">
-                        <Button Content="Create HTTP Request"
-                               Click="NewHttpTab_Click"
+                        <Button Content="📁 Create Collection"
+                               Click="CreateNewCollection_Click"
                                Style="{StaticResource ModernButtonStyle}"
-                               Margin="0,0,8,0"/>
-                        <Button Content="WebSocket"
+                               Margin="0,0,12,0"
+                               Padding="16,8"/>
+                        <Button Content="+ HTTP Request"
+                               Click="NewHttpTab_Click"
+                               Style="{StaticResource SecondaryButtonStyle}"
+                               Margin="0,0,8,0"
+                               Padding="16,8"/>
+                        <Button Content="+ WebSocket"
                                Click="NewWebSocketTab_Click"
                                Style="{StaticResource SecondaryButtonStyle}"
-                               Margin="0,0,8,0"/>
-                        <Button Content="gRPC"
+                               Margin="0,0,8,0"
+                               Padding="16,8"/>
+                        <Button Content="+ gRPC"
                                Click="NewGrpcTab_Click"
-                               Style="{StaticResource SecondaryButtonStyle}"/>
+                               Style="{StaticResource SecondaryButtonStyle}"
+                               Padding="16,8"/>
                     </StackPanel>
                 </StackPanel>
-            </Grid>
+            </Border>
         </Grid>
     </Grid>
 </Window>
