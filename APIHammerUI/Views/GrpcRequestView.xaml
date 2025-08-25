@@ -48,7 +48,7 @@
                     
                     <TextBox Grid.Column="1" 
                              Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource HeaderTextBoxStyle}"
+                             Style="{StaticResource DarkTextBoxStyle}"
                              FontFamily="Consolas"/>
                 </Grid>
             </Border>
@@ -75,7 +75,7 @@
                     
                     <TextBox Grid.Column="1" 
                              Text="{Binding Service, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource HeaderTextBoxStyle}"/>
+                             Style="{StaticResource DarkTextBoxStyle}"/>
                 </Grid>
             </Border>
 
@@ -102,7 +102,7 @@
                     
                     <TextBox Grid.Column="1" 
                              Text="{Binding Method, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource HeaderTextBoxStyle}"
+                             Style="{StaticResource DarkTextBoxStyle}"
                              Margin="0,0,12,0"/>
 
                     <Button Grid.Column="2" 

@@ -200,7 +200,7 @@
                                                     <!-- Key TextBox -->
                                                     <TextBox Grid.Column="1"
                                                              Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                             Style="{StaticResource HeaderTextBoxStyle}"
+                                                             Style="{StaticResource DarkTextBoxStyle}"
                                                              Margin="0,0,8,0"
                                                              Tag="Parameter"
                                                              GotFocus="QueryParameter_GotFocus">
@@ -212,7 +212,7 @@
                                                     <!-- Value TextBox -->
                                                     <TextBox Grid.Column="2"
                                                              Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
-                                                             Style="{StaticResource HeaderTextBoxStyle}"
+                                                             Style="{StaticResource DarkTextBoxStyle}"
                                                              Margin="0,0,8,0"
                                                              Tag="Value"
                                                              GotFocus="QueryParameter_GotFocus">
@@ -286,7 +286,7 @@
                                             
                                             <TextBox Grid.Column="1"
                                                      Text="{Binding Authentication.Username, UpdateSourceTrigger=PropertyChanged}"
-                                                     Style="{StaticResource HeaderTextBoxStyle}"/>
+                                                     Style="{StaticResource DarkTextBoxStyle}"/>
                                         </Grid>
                                         
                                         <Grid Margin="0,0,0,8">
@@ -331,7 +331,7 @@
                                                      Height="100"
                                                      TextWrapping="Wrap"
                                                      Text="{Binding Authentication.Token, UpdateSourceTrigger=PropertyChanged}"
-                                                     Style="{StaticResource HeaderTextBoxStyle}"
+                                                     Style="{StaticResource DarkTextBoxStyle}"
                                                      FontFamily="Consolas"/>
                                         </Grid>
                                     </StackPanel>
@@ -351,7 +351,7 @@
                                             
                                             <TextBox Grid.Column="1"
                                                      Text="{Binding Authentication.ApiKeyHeader, UpdateSourceTrigger=PropertyChanged}"
-                                                     Style="{StaticResource HeaderTextBoxStyle}"/>
+                                                     Style="{StaticResource DarkTextBoxStyle}"/>
                                         </Grid>
                                         
                                         <Grid Margin="0,0,0,8">
@@ -367,7 +367,7 @@
                                             
                                             <TextBox Grid.Column="1"
                                                      Text="{Binding Authentication.ApiKeyValue, UpdateSourceTrigger=PropertyChanged}"
-                                                     Style="{StaticResource HeaderTextBoxStyle}"
+                                                     Style="{StaticResource DarkTextBoxStyle}"
                                                      FontFamily="Consolas"/>
                                         </Grid>
                                     </StackPanel>
@@ -462,7 +462,7 @@
                                                     <!-- Key TextBox -->
                                                     <TextBox Grid.Column="1"
                                                              Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                             Style="{StaticResource HeaderTextBoxStyle}"
+                                                             Style="{StaticResource DarkTextBoxStyle}"
                                                              Margin="0,0,8,0"
                                                              Tag="Key"
                                                              GotFocus="TextBox_GotFocus">
@@ -474,7 +474,7 @@
                                                     <!-- Value TextBox -->
                                                     <TextBox Grid.Column="2"
                                                              Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
-                                                             Style="{StaticResource HeaderTextBoxStyle}"
+                                                             Style="{StaticResource DarkTextBoxStyle}"
                                                              Margin="0,0,8,0"
                                                              Tag="Value"
                                                              GotFocus="TextBox_GotFocus">

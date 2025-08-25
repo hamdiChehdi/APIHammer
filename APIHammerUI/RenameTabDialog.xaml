@@ -4,20 +4,9 @@
         Title="Rename Tab" Height="250" Width="400"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
-        Background="#2D2D2D">
+        Background="{StaticResource DarkPanel}">
     
     <Window.Resources>
-        <!-- Dark Theme Resources -->
-        <SolidColorBrush x:Key="DarkBackground" Color="#1E1E1E"/>
-        <SolidColorBrush x:Key="DarkPanel" Color="#2D2D2D"/>
-        <SolidColorBrush x:Key="DarkCard" Color="#3C3C3C"/>
-        <SolidColorBrush x:Key="DarkBorder" Color="#404040"/>
-        <SolidColorBrush x:Key="AccentBlue" Color="#007ACC"/>
-        <SolidColorBrush x:Key="AccentBlueHover" Color="#1F85CC"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="TextSecondary" Color="#CCCCCC"/>
-        <SolidColorBrush x:Key="TextMuted" Color="#999999"/>
-
         <!-- Dialog Button Style -->
         <Style x:Key="DialogButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource AccentBlue}"/>
@@ -64,39 +53,10 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Dark TextBox Style -->
+        <!-- Dialog TextBox Style using the global default style -->
         <Style x:Key="DialogTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Background" Value="{StaticResource DarkPanel}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DarkBorder}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="12"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="CaretBrush" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="SelectionBrush" Value="{StaticResource AccentBlue}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                                        Margin="{TemplateBinding Padding}"
-                                        Background="Transparent"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Background" Value="{StaticResource DarkBackground}"/>
-                                <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="FontSize" Value="14"/>
         </Style>
     </Window.Resources>
 
@@ -129,8 +89,8 @@
             <!-- Text Input -->
             <TextBox Grid.Row="2" 
                      x:Name="TabNameTextBox"
+                     Style="{StaticResource CompactTextBoxStyle}"
                      VerticalAlignment="Top"
-                     Height="40"
                      Margin="0,0,0,24"/>
 
             <!-- Buttons -->

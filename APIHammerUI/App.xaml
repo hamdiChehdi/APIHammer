@@ -151,14 +151,18 @@
             <Setter Property="Padding" Value="0"/>
         </Style>
 
-        <!-- Dark TextBox Style -->
-        <Style x:Key="DarkTextBoxStyle" TargetType="TextBox">
+        <!-- Global Dark TextBox Style (applies to all TextBoxes by default) -->
+        <Style TargetType="TextBox">
             <Setter Property="Background" Value="{StaticResource DarkPanel}"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
             <Setter Property="BorderBrush" Value="{StaticResource DarkBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="12"/>
             <Setter Property="FontSize" Value="13"/>
+            <Setter Property="CaretBrush" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="SelectionBrush" Value="{StaticResource AccentBlue}"/>
+            <Setter Property="SelectionTextBrush" Value="White"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
@@ -167,11 +171,24 @@
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="4">
                             <ScrollViewer x:Name="PART_ContentHost"
-                                        Margin="{TemplateBinding Padding}"/>
+                                        Margin="{TemplateBinding Padding}"
+                                        Background="Transparent"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                        VerticalScrollBarVisibility="Hidden"
+                                        HorizontalScrollBarVisibility="Hidden"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsFocused" Value="True">
                                 <Setter Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="{StaticResource DarkBackground}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+                            </Trigger>
+                            <Trigger Property="AcceptsReturn" Value="True">
+                                <Setter TargetName="PART_ContentHost" Property="VerticalScrollBarVisibility" Value="Auto"/>
+                                <Setter TargetName="PART_ContentHost" Property="VerticalAlignment" Value="Top"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -179,11 +196,29 @@
             </Setter>
         </Style>
 
-        <!-- Header TextBox Style (smaller padding) -->
-        <Style x:Key="HeaderTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource DarkTextBoxStyle}">
-            <Setter Property="Padding" Value="8"/>
+        <!-- Header TextBox Style (compact for small heights) -->
+        <Style x:Key="HeaderTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="Padding" Value="6"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Height" Value="32"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Compact TextBox Style (for very small heights) -->
+        <Style x:Key="CompactTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Height" Value="35"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Dark TextBox Style -->
+        <Style x:Key="DarkTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <!-- This now inherits from the global TextBox style -->
+            <Setter Property="Padding" Value="6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
         <!-- Dark ComboBox Style -->
