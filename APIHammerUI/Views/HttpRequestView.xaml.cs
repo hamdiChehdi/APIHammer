@@ -102,7 +102,13 @@ namespace APIHammerUI.Views
             {
                 httpRequest.IsLoading = true;
                 httpRequest.Response = "Loading...";
+                
+                // Reset response metadata
+                httpRequest.ResponseTime = null;
+                httpRequest.ResponseSize = null;
+                httpRequest.RequestDateTime = DateTime.Now;
 
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var request = new HttpRequestMessage();
                 
                 // Set method
@@ -181,12 +187,17 @@ namespace APIHammerUI.Views
                 }
 
                 var response = await httpClient.SendAsync(request);
+                stopwatch.Stop();
+                
+                // Capture response metadata
+                httpRequest.ResponseTime = stopwatch.Elapsed;
+                
                 var responseContent = await response.Content.ReadAsStringAsync();
+                httpRequest.ResponseSize = Encoding.UTF8.GetByteCount(responseContent);
 
                 // Format response
                 var responseText = new StringBuilder();
                 responseText.AppendLine($"Status: {(int)response.StatusCode} {response.StatusCode}");
-                responseText.AppendLine($"Response Time: {DateTime.Now:HH:mm:ss}");
                 responseText.AppendLine($"Request URL: {request.RequestUri}");
                 
                 // Show authentication info (without sensitive data)

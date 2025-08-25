@@ -189,6 +189,11 @@ public class HttpRequest : INotifyPropertyChanged
     private ObservableCollection<HttpHeaderItem> _headers;
     private ObservableCollection<HttpQueryParameter> _queryParameters;
     private AuthenticationSettings _authentication;
+    
+    // Response metadata properties
+    private TimeSpan? _responseTime;
+    private long? _responseSize;
+    private DateTime? _requestDateTime;
 
     public HttpRequest()
     {
@@ -354,6 +359,58 @@ public class HttpRequest : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsLoading));
         }
     }
+
+    // Response metadata properties
+    public TimeSpan? ResponseTime
+    {
+        get => _responseTime;
+        set
+        {
+            _responseTime = value;
+            OnPropertyChanged(nameof(ResponseTime));
+            OnPropertyChanged(nameof(ResponseTimeFormatted));
+        }
+    }
+
+    public long? ResponseSize
+    {
+        get => _responseSize;
+        set
+        {
+            _responseSize = value;
+            OnPropertyChanged(nameof(ResponseSize));
+            OnPropertyChanged(nameof(ResponseSizeFormatted));
+        }
+    }
+
+    public DateTime? RequestDateTime
+    {
+        get => _requestDateTime;
+        set
+        {
+            _requestDateTime = value;
+            OnPropertyChanged(nameof(RequestDateTime));
+            OnPropertyChanged(nameof(RequestDateTimeFormatted));
+        }
+    }
+
+    // Formatted properties for display
+    public string ResponseTimeFormatted => ResponseTime?.TotalMilliseconds.ToString("F0") + " ms" ?? "--";
+    
+    public string ResponseSizeFormatted
+    {
+        get
+        {
+            if (!ResponseSize.HasValue) return "--";
+            
+            var size = ResponseSize.Value;
+            if (size < 1024) return $"{size} B";
+            if (size < 1024 * 1024) return $"{size / 1024.0:F1} KB";
+            return $"{size / (1024.0 * 1024.0):F1} MB";
+        }
+    }
+    
+    public string RequestDateTimeFormatted => RequestDateTime?.ToString("yyyy-MM-dd HH:mm:ss.fff") ?? "--";
 
     public List<string> Methods { get; } = new List<string> { "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS" };
 
