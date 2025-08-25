@@ -5,72 +5,128 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800"
+             Background="#3C3C3C"
              Unloaded="UserControl_Unloaded">
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <!-- URL and Connect -->
-        <Grid Grid.Row="0" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="120"/>
-            </Grid.ColumnDefinitions>
+            <!-- Request Section Header -->
+            <TextBlock Grid.Row="0" 
+                       Text="WebSocket Connection" 
+                       FontSize="18" 
+                       FontWeight="Medium"
+                       Foreground="{StaticResource TextPrimary}"
+                       Margin="0,0,0,20"/>
 
-            <TextBox Grid.Column="0" 
-                     Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}"
-                     VerticalAlignment="Center"
-                     Margin="0,0,10,0"
-                     Padding="5"/>
+            <!-- URL and Connect -->
+            <Grid Grid.Row="1" 
+                  Height="38"
+                  Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <Button Grid.Column="1" 
-                    Content="{Binding ConnectButtonText}" 
-                    Click="ConnectButton_Click"
-                    VerticalAlignment="Center"/>
+                <TextBox Grid.Column="0" 
+                         Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource DarkTextBoxStyle}"
+                         Margin="0,0,12,0"
+                         FontFamily="Consolas"/>
+
+                <Button Grid.Column="1" 
+                        Content="{Binding ConnectButtonText}" 
+                        Click="ConnectButton_Click"
+                        Style="{StaticResource SendButtonStyle}"/>
+            </Grid>
+
+            <!-- Status Display -->
+            <Border Grid.Row="2" 
+                    Background="{StaticResource DarkBackground}"
+                    BorderBrush="{StaticResource DarkBorder}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="12"
+                    Margin="0,0,0,20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Grid.Column="0"
+                               Text="Status:" 
+                               FontSize="12" 
+                               Foreground="{StaticResource TextMuted}"
+                               FontWeight="Medium"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding IsConnected, Converter={StaticResource ConnectionStatusConverter}}"
+                               FontWeight="Medium"
+                               FontSize="12"
+                               Foreground="{StaticResource TextPrimary}"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- Messages Section Header -->
+            <TextBlock Grid.Row="3" 
+                       Text="Messages" 
+                       FontSize="14" 
+                       FontWeight="Medium" 
+                       Foreground="{StaticResource TextPrimary}"
+                       Margin="0,0,0,8"/>
+
+            <!-- Messages Display -->
+            <Border Grid.Row="4"
+                    Background="{StaticResource DarkBackground}"
+                    BorderBrush="{StaticResource DarkBorder}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    MinHeight="200"
+                    Margin="0,0,0,16">
+                <TextBox Text="{Binding Messages}"
+                         IsReadOnly="True"
+                         Background="Transparent"
+                         Foreground="{StaticResource TextSecondary}"
+                         BorderThickness="0"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         Padding="12"
+                         FontFamily="Consolas"
+                         FontSize="12"/>
+            </Border>
+
+            <!-- Send Message -->
+            <Grid Grid.Row="5"
+                  Height="38">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBox Grid.Column="0" 
+                         Text="{Binding Message, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource DarkTextBoxStyle}"
+                         Margin="0,0,12,0"
+                         FontFamily="Consolas"
+                         IsEnabled="{Binding IsConnected}"/>
+
+                <Button Grid.Column="1" 
+                        Content="Send Message" 
+                        Click="SendMessageButton_Click"
+                        IsEnabled="{Binding IsConnected}"
+                        Style="{StaticResource SendButtonStyle}"/>
+            </Grid>
         </Grid>
-
-        <!-- Status -->
-        <TextBlock Grid.Row="1" 
-                   Text="{Binding IsConnected, Converter={StaticResource ConnectionStatusConverter}}"
-                   FontWeight="Bold"
-                   Margin="0,0,0,10"/>
-
-        <!-- Messages Label -->
-        <TextBlock Grid.Row="2" Text="Messages:" FontWeight="Bold" Margin="0,0,0,5"/>
-
-        <!-- Messages Display -->
-        <TextBox Grid.Row="3" 
-                 Text="{Binding Messages}"
-                 IsReadOnly="True"
-                 TextWrapping="Wrap"
-                 VerticalScrollBarVisibility="Auto"
-                 Background="LightGray"
-                 Margin="0,0,0,10"/>
-
-        <!-- Send Message -->
-        <Grid Grid.Row="4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="80"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBox Grid.Column="0" 
-                     Text="{Binding Message, UpdateSourceTrigger=PropertyChanged}"
-                     VerticalAlignment="Center"
-                     Margin="0,0,10,0"
-                     Padding="5"
-                     IsEnabled="{Binding IsConnected}"/>
-
-            <Button Grid.Column="1" 
-                    Content="Send" 
-                    Click="SendMessageButton_Click"
-                    IsEnabled="{Binding IsConnected}"
-                    VerticalAlignment="Center"/>
-        </Grid>
-    </Grid>
+    </ScrollViewer>
 </UserControl>

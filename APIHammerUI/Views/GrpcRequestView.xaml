@@ -4,88 +4,167 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+             d:DesignHeight="450" d:DesignWidth="800"
+             Background="#3C3C3C">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <!-- Server URL -->
-        <Grid Grid.Row="0" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="80"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+            <!-- Request Section Header -->
+            <TextBlock Grid.Row="0" 
+                       Text="gRPC Request" 
+                       FontSize="18" 
+                       FontWeight="Medium"
+                       Foreground="{StaticResource TextPrimary}"
+                       Margin="0,0,0,20"/>
 
-            <TextBlock Grid.Column="0" Text="Server:" VerticalAlignment="Center" FontWeight="Bold"/>
-            <TextBox Grid.Column="1" 
-                     Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}"
-                     VerticalAlignment="Center"
-                     Padding="5"/>
+            <!-- Server URL -->
+            <Border Grid.Row="1" 
+                    Background="{StaticResource DarkPanel}"
+                    BorderBrush="{StaticResource DarkBorder}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="16"
+                    Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" 
+                               Text="Server:" 
+                               VerticalAlignment="Center" 
+                               FontWeight="Medium"
+                               Foreground="{StaticResource TextSecondary}"/>
+                    
+                    <TextBox Grid.Column="1" 
+                             Text="{Binding Server, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource HeaderTextBoxStyle}"
+                             FontFamily="Consolas"/>
+                </Grid>
+            </Border>
+
+            <!-- Service -->
+            <Border Grid.Row="2" 
+                    Background="{StaticResource DarkPanel}"
+                    BorderBrush="{StaticResource DarkBorder}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="16"
+                    Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" 
+                               Text="Service:" 
+                               VerticalAlignment="Center" 
+                               FontWeight="Medium"
+                               Foreground="{StaticResource TextSecondary}"/>
+                    
+                    <TextBox Grid.Column="1" 
+                             Text="{Binding Service, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource HeaderTextBoxStyle}"/>
+                </Grid>
+            </Border>
+
+            <!-- Method and Call Button -->
+            <Border Grid.Row="3" 
+                    Background="{StaticResource DarkPanel}"
+                    BorderBrush="{StaticResource DarkBorder}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="16"
+                    Margin="0,0,0,20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" 
+                               Text="Method:" 
+                               VerticalAlignment="Center" 
+                               FontWeight="Medium"
+                               Foreground="{StaticResource TextSecondary}"/>
+                    
+                    <TextBox Grid.Column="1" 
+                             Text="{Binding Method, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource HeaderTextBoxStyle}"
+                             Margin="0,0,12,0"/>
+
+                    <Button Grid.Column="2" 
+                            Content="Call Method" 
+                            Click="CallButton_Click"
+                            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                            Style="{StaticResource SendButtonStyle}"/>
+                </Grid>
+            </Border>
+
+            <!-- Request Section -->
+            <StackPanel Grid.Row="4" Margin="0,0,0,20">
+                <TextBlock Text="Request (JSON)" 
+                           FontSize="14" 
+                           FontWeight="Medium" 
+                           Foreground="{StaticResource TextPrimary}"
+                           Margin="0,0,0,8"/>
+                
+                <Border Background="{StaticResource DarkBackground}"
+                        BorderBrush="{StaticResource DarkBorder}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        MinHeight="200">
+                    <TextBox Text="{Binding Request, UpdateSourceTrigger=PropertyChanged}"
+                             Background="Transparent"
+                             Foreground="{StaticResource TextPrimary}"
+                             BorderThickness="0"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto"
+                             Padding="12"
+                             FontFamily="Consolas"
+                             FontSize="12"/>
+                </Border>
+            </StackPanel>
+
+            <!-- Response Section Header -->
+            <TextBlock Grid.Row="5" 
+                       Text="Response" 
+                       FontSize="14" 
+                       FontWeight="Medium" 
+                       Foreground="{StaticResource TextPrimary}"
+                       Margin="0,0,0,8"/>
+
+            <!-- Response Section -->
+            <Border Grid.Row="6"
+                    Background="{StaticResource DarkBackground}"
+                    BorderBrush="{StaticResource DarkBorder}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    MinHeight="200">
+                <TextBox Text="{Binding Response}"
+                         IsReadOnly="True"
+                         Background="Transparent"
+                         Foreground="{StaticResource TextSecondary}"
+                         BorderThickness="0"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         Padding="12"
+                         FontFamily="Consolas"
+                         FontSize="12"/>
+            </Border>
         </Grid>
-
-        <!-- Service -->
-        <Grid Grid.Row="1" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="80"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBlock Grid.Column="0" Text="Service:" VerticalAlignment="Center" FontWeight="Bold"/>
-            <TextBox Grid.Column="1" 
-                     Text="{Binding Service, UpdateSourceTrigger=PropertyChanged}"
-                     VerticalAlignment="Center"
-                     Padding="5"/>
-        </Grid>
-
-        <!-- Method -->
-        <Grid Grid.Row="2" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="80"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="100"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBlock Grid.Column="0" Text="Method:" VerticalAlignment="Center" FontWeight="Bold"/>
-            <TextBox Grid.Column="1" 
-                     Text="{Binding Method, UpdateSourceTrigger=PropertyChanged}"
-                     VerticalAlignment="Center"
-                     Margin="0,0,10,0"
-                     Padding="5"/>
-
-            <Button Grid.Column="2" 
-                    Content="Call" 
-                    Click="CallButton_Click"
-                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                    VerticalAlignment="Center"/>
-        </Grid>
-
-        <!-- Request Label -->
-        <TextBlock Grid.Row="3" Text="Request (JSON):" FontWeight="Bold" Margin="0,0,0,5"/>
-
-        <!-- Request Body -->
-        <TextBox Grid.Row="4" 
-                 Text="{Binding Request, UpdateSourceTrigger=PropertyChanged}"
-                 TextWrapping="Wrap"
-                 AcceptsReturn="True"
-                 VerticalScrollBarVisibility="Auto"
-                 Margin="0,0,0,10"/>
-
-        <!-- Response Label -->
-        <TextBlock Grid.Row="5" Text="Response:" FontWeight="Bold" Margin="0,0,0,5"/>
-
-        <!-- Response -->
-        <TextBox Grid.Row="6" 
-                 Text="{Binding Response}"
-                 IsReadOnly="True"
-                 TextWrapping="Wrap"
-                 VerticalScrollBarVisibility="Auto"
-                 Background="LightGray"/>
-    </Grid>
+    </ScrollViewer>
 </UserControl>
