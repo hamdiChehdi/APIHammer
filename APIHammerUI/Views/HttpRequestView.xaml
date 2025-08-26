@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialIcons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800"
              Background="#3C3C3C">
@@ -602,8 +603,8 @@
                            HorizontalAlignment="Right"
                            VerticalAlignment="Center"
                            Margin="0,0,12,0">
-                    
-                    <Button Content="💾 Save JSON"
+
+                    <Button 
                             Click="SaveAsJson_Click"
                             Style="{StaticResource IconButtonStyle}"
                             Foreground="{StaticResource AccentBlue}"
@@ -611,16 +612,20 @@
                             FontSize="11"
                             Margin="0,0,8,0"
                             ToolTip="Save response body as JSON file&#x0a;Keyboard: Ctrl+J"
-                            Visibility="{Binding Response, Converter={StaticResource NotNullToVisibilityConverter}}"/>
-                    
-                    <Button Content="📄 Save Text"
+                            Visibility="{Binding Response, Converter={StaticResource NotNullToVisibilityConverter}}">
+                        <materialIcons:MaterialIcon Kind="CodeJson" Height="30" />
+                    </Button>
+
+                    <Button 
                             Click="SaveAsText_Click"
                             Style="{StaticResource IconButtonStyle}"
                             Foreground="{StaticResource AccentBlue}"
                             Padding="8,4"
                             FontSize="11"
                             ToolTip="Save full response (headers + body) as text file&#x0a;Keyboard: Ctrl+S"
-                            Visibility="{Binding Response, Converter={StaticResource NotNullToVisibilityConverter}}"/>
+                            Visibility="{Binding Response, Converter={StaticResource NotNullToVisibilityConverter}}">
+                        <TextBlock Text="📄 Save Text" FontFamily="Segoe UI Emoji" FontSize="18" />
+                    </Button>
                 </StackPanel>
 
                 <!-- Response Metadata -->
