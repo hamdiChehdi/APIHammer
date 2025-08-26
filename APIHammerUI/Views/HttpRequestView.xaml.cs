@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using System.Threading;
 using System.IO;
 using System.Windows.Threading;
+using Microsoft.Win32;
 
 namespace APIHammerUI.Views
 {
@@ -43,6 +44,9 @@ namespace APIHammerUI.Views
             
             // Subscribe to the Unloaded event for cleanup
             this.Unloaded += HttpRequestView_Unloaded;
+            
+            // Add keyboard shortcuts
+            this.KeyDown += HttpRequestView_KeyDown;
         }
 
         private void HttpRequestView_Unloaded(object sender, RoutedEventArgs e)
@@ -50,6 +54,35 @@ namespace APIHammerUI.Views
             // Cleanup when control is unloaded
             _currentRequestCancellation?.Cancel();
             _uiUpdateTimer?.Stop();
+        }
+
+        private void HttpRequestView_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (DataContext is not HttpRequest httpRequest || string.IsNullOrWhiteSpace(httpRequest.Response))
+                return;
+
+            // Ctrl+S for Save as Text
+            if (e.Key == System.Windows.Input.Key.S && 
+                (e.KeyboardDevice.Modifiers & System.Windows.Input.ModifierKeys.Control) != 0)
+            {
+                SaveAsText_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // Ctrl+J for Save as JSON
+            else if (e.Key == System.Windows.Input.Key.J && 
+                     (e.KeyboardDevice.Modifiers & System.Windows.Input.ModifierKeys.Control) != 0)
+            {
+                SaveAsJson_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // Ctrl+C for Copy (only if not in a text input)
+            else if (e.Key == System.Windows.Input.Key.C && 
+                     (e.KeyboardDevice.Modifiers & System.Windows.Input.ModifierKeys.Control) != 0 &&
+                     !(e.OriginalSource is TextBox textBox && !textBox.IsReadOnly))
+            {
+                CopyResponse_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
         }
 
         private void AddHeader_Click(object sender, RoutedEventArgs e)
@@ -666,6 +699,298 @@ namespace APIHammerUI.Views
             };
 
             return contentHeaders.Any(h => h.Equals(headerName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void SaveAsJson_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not HttpRequest httpRequest || string.IsNullOrWhiteSpace(httpRequest.Response))
+                return;
+
+            try
+            {
+                // Extract JSON content from response
+                var jsonContent = ExtractResponseBody(httpRequest.Response);
+                
+                if (string.IsNullOrWhiteSpace(jsonContent))
+                {
+                    MessageBox.Show("No response body found to save.", "Save JSON", 
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Validate and format JSON
+                string formattedJson;
+                bool isValidJson = true;
+                try
+                {
+                    var parsedJson = JsonConvert.DeserializeObject(jsonContent);
+                    formattedJson = JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+                }
+                catch (JsonException)
+                {
+                    isValidJson = false;
+                    // If it's not valid JSON, save as-is but warn the user
+                    var result = MessageBox.Show(
+                        "The response body doesn't appear to be valid JSON. Save as plain text instead?", 
+                        "Invalid JSON", 
+                        MessageBoxButton.YesNo, 
+                        MessageBoxImage.Question);
+                    
+                    if (result != MessageBoxResult.Yes)
+                        return;
+                    
+                    formattedJson = jsonContent;
+                }
+
+                // Show save dialog
+                var extension = isValidJson ? ".json" : ".txt";
+                var filter = isValidJson ? 
+                    "JSON Files (*.json)|*.json|Text Files (*.txt)|*.txt|All Files (*.*)|*.*" :
+                    "Text Files (*.txt)|*.txt|JSON Files (*.json)|*.json|All Files (*.*)|*.*";
+
+                var saveDialog = new SaveFileDialog
+                {
+                    Title = "Save Response Body",
+                    Filter = filter,
+                    DefaultExt = extension,
+                    FileName = GenerateFileName("response_body", extension)
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    File.WriteAllText(saveDialog.FileName, formattedJson, Encoding.UTF8);
+                    
+                    var fileInfo = new FileInfo(saveDialog.FileName);
+                    var sizeInfo = fileInfo.Length < 1024 ? 
+                        $"{fileInfo.Length} bytes" : 
+                        $"{fileInfo.Length / 1024.0:F1} KB";
+
+                    MessageBox.Show($"Response body saved successfully!\n\nFile: {saveDialog.FileName}\nSize: {sizeInfo}", 
+                        "Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                MessageBox.Show("Access denied. Please choose a different location or run as administrator.", 
+                    "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                MessageBox.Show("The specified directory does not exist.", 
+                    "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving file: {ex.Message}", "Save Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SaveAsText_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not HttpRequest httpRequest || string.IsNullOrWhiteSpace(httpRequest.Response))
+                return;
+
+            try
+            {
+                // Show save dialog
+                var saveDialog = new SaveFileDialog
+                {
+                    Title = "Save Full Response as Text",
+                    Filter = "Text Files (*.txt)|*.txt|Log Files (*.log)|*.log|Markdown Files (*.md)|*.md|All Files (*.*)|*.*",
+                    DefaultExt = ".txt",
+                    FileName = GenerateFileName("http_response", ".txt")
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    // Save the complete response including headers and metadata
+                    var fullResponse = BuildFullResponseForSave(httpRequest);
+                    File.WriteAllText(saveDialog.FileName, fullResponse, Encoding.UTF8);
+                    
+                    var fileInfo = new FileInfo(saveDialog.FileName);
+                    var sizeInfo = fileInfo.Length < 1024 ? 
+                        $"{fileInfo.Length} bytes" : 
+                        fileInfo.Length < 1024 * 1024 ?
+                        $"{fileInfo.Length / 1024.0:F1} KB" :
+                        $"{fileInfo.Length / (1024.0 * 1024.0):F1} MB";
+
+                    MessageBox.Show($"Full response saved successfully!\n\nFile: {saveDialog.FileName}\nSize: {sizeInfo}", 
+                        "Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                MessageBox.Show("Access denied. Please choose a different location or run as administrator.", 
+                    "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                MessageBox.Show("The specified directory does not exist.", 
+                    "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving file: {ex.Message}", "Save Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private string ExtractResponseBody(string fullResponse)
+        {
+            // Find the "Response Body:" section
+            const string bodyMarker = "Response Body:";
+            var bodyIndex = fullResponse.IndexOf(bodyMarker, StringComparison.OrdinalIgnoreCase);
+            
+            if (bodyIndex == -1)
+                return string.Empty;
+
+            // Extract everything after "Response Body:"
+            var startIndex = bodyIndex + bodyMarker.Length;
+            var responseBody = fullResponse.Substring(startIndex).Trim();
+            
+            // Remove any progress indicators that might be at the end
+            var progressMarkers = new[] { "\n\nStreaming...", "[Response truncated", "[Response too large" };
+            foreach (var marker in progressMarkers)
+            {
+                var markerIndex = responseBody.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                if (markerIndex != -1)
+                {
+                    responseBody = responseBody.Substring(0, markerIndex).Trim();
+                    break;
+                }
+            }
+
+            return responseBody;
+        }
+
+        private string BuildFullResponseForSave(HttpRequest httpRequest)
+        {
+            var fullResponse = new StringBuilder();
+            
+            // Add metadata header
+            fullResponse.AppendLine("=".PadRight(80, '='));
+            fullResponse.AppendLine("API HAMMER - HTTP Response Export");
+            fullResponse.AppendLine("=".PadRight(80, '='));
+            fullResponse.AppendLine($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss} (Local Time)");
+            fullResponse.AppendLine($"Tool Version: API Hammer v1.0");
+            fullResponse.AppendLine();
+
+            // Add request information
+            fullResponse.AppendLine("-".PadRight(80, '-'));
+            fullResponse.AppendLine("REQUEST INFORMATION");
+            fullResponse.AppendLine("-".PadRight(80, '-'));
+            fullResponse.AppendLine($"Method: {httpRequest.Method}");
+            fullResponse.AppendLine($"URL: {httpRequest.FullUrl}");
+            
+            if (httpRequest.RequestDateTime.HasValue)
+                fullResponse.AppendLine($"Request Sent: {httpRequest.RequestDateTime:yyyy-MM-dd HH:mm:ss.fff}");
+            
+            if (httpRequest.ResponseTime.HasValue)
+                fullResponse.AppendLine($"Response Time: {httpRequest.ResponseTimeFormatted}");
+            
+            if (httpRequest.ResponseSize.HasValue)
+                fullResponse.AppendLine($"Response Size: {httpRequest.ResponseSizeFormatted}");
+
+            // Add authentication info (without sensitive data)
+            if (httpRequest.Authentication.Type != AuthenticationType.None)
+            {
+                fullResponse.AppendLine($"Authentication Type: {httpRequest.Authentication.Type}");
+                if (httpRequest.Authentication.Type == AuthenticationType.ApiKey && 
+                    !string.IsNullOrWhiteSpace(httpRequest.Authentication.ApiKeyHeader))
+                {
+                    fullResponse.AppendLine($"API Key Header: {httpRequest.Authentication.ApiKeyHeader}");
+                }
+                if (httpRequest.Authentication.Type == AuthenticationType.BasicAuth && 
+                    !string.IsNullOrWhiteSpace(httpRequest.Authentication.Username))
+                {
+                    fullResponse.AppendLine($"Username: {httpRequest.Authentication.Username}");
+                }
+            }
+
+            fullResponse.AppendLine();
+
+            // Add request headers
+            var enabledHeaders = httpRequest.Headers.Where(h => h.IsEnabled && !string.IsNullOrWhiteSpace(h.Key)).ToList();
+            if (enabledHeaders.Any())
+            {
+                fullResponse.AppendLine("-".PadRight(80, '-'));
+                fullResponse.AppendLine("REQUEST HEADERS");
+                fullResponse.AppendLine("-".PadRight(80, '-'));
+                
+                foreach (var header in enabledHeaders)
+                {
+                    fullResponse.AppendLine($"{header.Key}: {header.Value}");
+                }
+                fullResponse.AppendLine();
+            }
+
+            // Add query parameters
+            var enabledParams = httpRequest.QueryParameters.Where(p => p.IsEnabled && !string.IsNullOrWhiteSpace(p.Key)).ToList();
+            if (enabledParams.Any())
+            {
+                fullResponse.AppendLine("-".PadRight(80, '-'));
+                fullResponse.AppendLine("QUERY PARAMETERS");
+                fullResponse.AppendLine("-".PadRight(80, '-'));
+                
+                foreach (var param in enabledParams)
+                {
+                    fullResponse.AppendLine($"{param.Key} = {param.Value}");
+                }
+                fullResponse.AppendLine();
+            }
+
+            // Add request body if present
+            if (!string.IsNullOrWhiteSpace(httpRequest.Body))
+            {
+                fullResponse.AppendLine("-".PadRight(80, '-'));
+                fullResponse.AppendLine("REQUEST BODY");
+                fullResponse.AppendLine("-".PadRight(80, '-'));
+                fullResponse.AppendLine(httpRequest.Body);
+                fullResponse.AppendLine();
+            }
+
+            // Add the response section
+            fullResponse.AppendLine("=".PadRight(80, '='));
+            fullResponse.AppendLine("HTTP RESPONSE");
+            fullResponse.AppendLine("=".PadRight(80, '='));
+            
+            // Add the actual response
+            fullResponse.AppendLine(httpRequest.Response);
+
+            // Add footer
+            fullResponse.AppendLine();
+            fullResponse.AppendLine("=".PadRight(80, '='));
+            fullResponse.AppendLine("End of API Hammer Export");
+            fullResponse.AppendLine("=".PadRight(80, '='));
+
+            return fullResponse.ToString();
+        }
+
+        private string GenerateFileName(string prefix, string extension)
+        {
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            return $"{prefix}_{timestamp}{extension}";
+        }
+
+        private void CopyResponse_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not HttpRequest httpRequest || string.IsNullOrWhiteSpace(httpRequest.Response))
+                return;
+
+            try
+            {
+                Clipboard.SetText(httpRequest.Response);
+                
+                // Show a brief feedback (could be replaced with a toast notification)
+                MessageBox.Show("Response copied to clipboard!", "Copy Complete", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error copying to clipboard: {ex.Message}", "Copy Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

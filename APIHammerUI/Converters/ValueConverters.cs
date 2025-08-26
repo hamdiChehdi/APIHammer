@@ -134,3 +134,19 @@ public class NullToVisibilityConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+public class NotNullToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string str)
+            return !string.IsNullOrWhiteSpace(str) ? Visibility.Visible : Visibility.Collapsed;
+        
+        return value != null ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}

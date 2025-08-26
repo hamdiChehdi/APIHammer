@@ -12,6 +12,7 @@
         <converters:RequestTypeIconConverter x:Key="RequestTypeIconConverter"/>
         <converters:RequestTypeColorConverter x:Key="RequestTypeColorConverter"/>
         <converters:AuthTypeToVisibilityConverter x:Key="AuthTypeToVisibilityConverter"/>
+        <converters:NotNullToVisibilityConverter x:Key="NotNullToVisibilityConverter"/>
 
         <!-- Global Dark Theme Colors -->
         <SolidColorBrush x:Key="DarkBackground" Color="#1E1E1E"/>
