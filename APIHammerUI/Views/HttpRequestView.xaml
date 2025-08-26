@@ -582,12 +582,91 @@
             </TabControl>
 
             <!-- Response Section Header -->
-            <TextBlock Grid.Row="4" 
-                       Text="Response" 
-                       FontSize="14" 
-                       FontWeight="Medium" 
-                       Foreground="{StaticResource TextPrimary}"
-                       Margin="0,0,0,8"/>
+            <Grid Grid.Row="4" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+               Text="Response" 
+               FontSize="14" 
+               FontWeight="Medium" 
+               VerticalAlignment="Center"
+               Foreground="{StaticResource TextPrimary}"/>
+
+                <!-- Response Metadata -->
+                <StackPanel Grid.Column="2" 
+               Orientation="Horizontal"
+               VerticalAlignment="Center">
+
+                    <!-- Response Time -->
+                    <Border Background="{StaticResource DarkCard}"
+                BorderBrush="{StaticResource DarkBorder}"
+                BorderThickness="1"
+                CornerRadius="3"
+                Padding="8,4"
+                Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Time"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Margin="0,0,4,0"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextMuted}"/>
+                            <TextBlock Text="{Binding ResponseTimeFormatted, Mode=OneWay}"
+                           FontSize="11"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource AccentBlue}"
+                           VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Response Size -->
+                    <Border Background="{StaticResource DarkCard}"
+                BorderBrush="{StaticResource DarkBorder}"
+                BorderThickness="1"
+                CornerRadius="3"
+                Padding="8,4"
+                Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Size"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Margin="0,0,4,0"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextMuted}"/>
+                            <TextBlock Text="{Binding ResponseSizeFormatted, Mode=OneWay}"
+                           FontSize="11"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource SuccessGreen}"
+                           VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Request DateTime -->
+                    <Border Background="{StaticResource DarkCard}"
+                BorderBrush="{StaticResource DarkBorder}"
+                BorderThickness="1"
+                CornerRadius="3"
+                Padding="8,4">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Sent"
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Margin="0,0,4,0"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextMuted}"/>
+                            <TextBlock Text="{Binding RequestDateTimeFormatted, Mode=OneWay}"
+                           FontSize="11"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource TextSecondary}"
+                           VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
 
             <!-- Response Section -->
             <Border Grid.Row="5"
