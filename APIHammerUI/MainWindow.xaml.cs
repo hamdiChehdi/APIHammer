@@ -431,7 +431,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    private async void SendAllRequestsMenuItem_Click(object sender, RoutedEventArgs e)
+    private void SendAllRequestsMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (sender is MenuItem menuItem && menuItem.Tag is TabCollection collection)
         {

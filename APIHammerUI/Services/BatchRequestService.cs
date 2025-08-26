@@ -100,11 +100,16 @@ public class BatchRequestService
             // Wait for all requests to complete
             var requestResults = await Task.WhenAll(tasks);
             
+            if (requestResults is null)
+            {
+                throw new InvalidOperationException("Request results should not be null");
+            }
+
             // Aggregate results
             result.CompletedRequests = requestResults.Length;
             result.SuccessfulRequests = requestResults.Count(r => r.Success);
             result.FailedRequests = requestResults.Count(r => !r.Success);
-            result.Errors = requestResults.Where(r => !r.Success).Select(r => r.ErrorMessage).ToList();
+            result.Errors = requestResults.Where(r => !r.Success).Select(r => r.ErrorMessage!).ToList();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
