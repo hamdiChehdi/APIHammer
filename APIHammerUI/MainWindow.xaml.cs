@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using APIHammerUI.Models;
 using APIHammerUI.Views;
+using APIHammerUI.Services;
 
 namespace APIHammerUI;
 
@@ -320,6 +321,106 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     SelectedTab = collection.Tabs.FirstOrDefault();
                 }
             }
+        }
+    }
+
+    private async void ImportOpenApi_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var importDialog = new ImportOpenApiDialog
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (importDialog.ShowDialog() == true && importDialog.ImportResult != null)
+            {
+                var result = importDialog.ImportResult;
+                
+                // Create new collection for imported requests
+                var collection = new TabCollection 
+                { 
+                    Name = result.CollectionName 
+                };
+
+                // Add each imported request as a tab
+                foreach (var httpRequest in result.ImportedRequests)
+                {
+                    // Generate tab name from HTTP method and URL path
+                    var tabName = GenerateTabNameFromRequest(httpRequest);
+                    
+                    var tab = new RequestTab
+                    {
+                        Name = tabName,
+                        RequestType = RequestType.HTTP
+                    };
+
+                    var httpView = new HttpRequestView { DataContext = httpRequest };
+                    tab.Content = httpView;
+                    
+                    collection.Tabs.Add(tab);
+                }
+
+                // Add collection to the main collections
+                TabCollections.Add(collection);
+                SelectedCollection = collection;
+                
+                // Select the first imported tab
+                if (collection.Tabs.Any())
+                {
+                    SelectedTab = collection.Tabs.First();
+                }
+
+                // Show success message
+                var apiInfo = result.ApiInfo;
+                var infoMessage = $"Successfully imported {result.ImportedRequests.Count} requests";
+                if (apiInfo != null)
+                {
+                    infoMessage += $" from {apiInfo.Title}";
+                    if (!string.IsNullOrEmpty(apiInfo.Version))
+                    {
+                        infoMessage += $" (v{apiInfo.Version})";
+                    }
+                }
+                infoMessage += ".";
+
+                MessageBox.Show(infoMessage, "Import Successful", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            MessageBox.Show($"Import failed: {ex.Message}", "Import Error", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private string GenerateTabNameFromRequest(HttpRequest httpRequest)
+    {
+        try
+        {
+            var method = httpRequest.Method.ToUpper();
+            var uri = new System.Uri(httpRequest.Url);
+            var pathSegments = uri.AbsolutePath.Split('/', System.StringSplitOptions.RemoveEmptyEntries);
+            
+            if (pathSegments.Length > 0)
+            {
+                var lastSegment = pathSegments.Last();
+                // Clean up path parameters (remove {id}, {param}, etc.)
+                lastSegment = System.Text.RegularExpressions.Regex.Replace(lastSegment, @"\{[^}]+\}", "");
+                
+                if (!string.IsNullOrEmpty(lastSegment))
+                {
+                    return $"{method} {lastSegment}";
+                }
+            }
+            
+            return $"{method} {uri.AbsolutePath}";
+        }
+        catch
+        {
+            return $"{httpRequest.Method} Request";
         }
     }
 

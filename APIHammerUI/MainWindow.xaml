@@ -458,6 +458,13 @@
                         Margin="0,0,8,0"
                         Padding="12,6"
                         FontSize="12"/>
+                <Button Content="Import OpenAPI" 
+                        Click="ImportOpenApi_Click" 
+                        Style="{StaticResource ModernButtonStyle}"
+                        Background="{StaticResource SuccessGreen}"
+                        Margin="0,0,8,0"
+                        Padding="12,6"
+                        FontSize="12"/>
                 
                 <Rectangle Width="1" 
                           Fill="{StaticResource DarkBorder}" 
@@ -556,6 +563,13 @@
                         <Button Content="+ New Collection" 
                                 Click="CreateNewCollection_Click"
                                 Style="{StaticResource ModernButtonStyle}"
+                                FontSize="11"
+                                Padding="8,4"
+                                Margin="0,0,4,4"/>
+                        <Button Content="📁 Import OpenAPI" 
+                                Click="ImportOpenApi_Click"
+                                Style="{StaticResource ModernButtonStyle}"
+                                Background="{StaticResource SuccessGreen}"
                                 FontSize="11"
                                 Padding="8,4"
                                 Margin="0,0,4,4"/>
