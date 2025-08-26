@@ -324,7 +324,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private async void ImportOpenApi_Click(object sender, RoutedEventArgs e)
+    private void ImportOpenApi_Click(object sender, RoutedEventArgs e)
     {
         try
         {

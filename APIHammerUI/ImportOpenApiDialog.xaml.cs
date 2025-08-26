@@ -239,6 +239,7 @@ public partial class ImportOpenApiDialog : Window, INotifyPropertyChanged
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Failed to update status UI: {ex.Message}");
             // Fallback: just show the message in a message box if UI update fails
             MessageBox.Show(message, isError ? "Error" : "Status", 
                 MessageBoxButton.OK, isError ? MessageBoxImage.Error : MessageBoxImage.Information);

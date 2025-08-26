@@ -44,7 +44,7 @@ public class OpenApiImportService
             }
 
             var jsonContent = await File.ReadAllTextAsync(filePath);
-            return await ParseOpenApiContent(jsonContent, Path.GetFileNameWithoutExtension(filePath));
+            return ParseOpenApiContent(jsonContent, Path.GetFileNameWithoutExtension(filePath));
         }
         catch (Exception ex)
         {
@@ -78,7 +78,7 @@ public class OpenApiImportService
             var jsonContent = await response.Content.ReadAsStringAsync();
             var collectionName = uri.Host.Replace("www.", "");
             
-            return await ParseOpenApiContent(jsonContent, collectionName);
+            return ParseOpenApiContent(jsonContent, collectionName);
         }
         catch (HttpRequestException ex)
         {
@@ -98,7 +98,7 @@ public class OpenApiImportService
         }
     }
 
-    private async Task<OpenApiImportResult> ParseOpenApiContent(string jsonContent, string defaultCollectionName)
+    private OpenApiImportResult ParseOpenApiContent(string jsonContent, string defaultCollectionName)
     {
         try
         {
