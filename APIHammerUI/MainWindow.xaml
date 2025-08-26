@@ -5,6 +5,7 @@
         xmlns:converters="clr-namespace:APIHammerUI.Converters"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:materialIcons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
         mc:Ignorable="d"
         Title="API Hammer - API Testing Tool" Height="700" Width="1400"
         WindowStartupLocation="CenterScreen"
@@ -572,8 +573,10 @@
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate ItemsSource="{Binding Tabs}">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="[F]" Margin="0,0,6,0" FontSize="14" 
-                                           Foreground="{StaticResource AccentBlue}" FontWeight="Bold"/>
+                                <materialIcons:MaterialIcon Kind="Group"
+                                                            Margin="0,0,6,0"
+                                                            Foreground="{StaticResource AccentBlue}"
+                                                            />
                                 <TextBlock Text="{Binding Name}" 
                                            Foreground="{StaticResource TextPrimary}"
                                            FontWeight="Medium"
