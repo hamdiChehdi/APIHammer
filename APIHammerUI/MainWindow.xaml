@@ -126,6 +126,12 @@
                                             Tag="{Binding}"
                                             Background="{StaticResource DarkCard}"
                                             Foreground="{StaticResource TextPrimary}"/>
+                                    <MenuItem Header="Move to Collection..." 
+                                            Click="MoveTabMenuItem_Click" 
+                                            Tag="{Binding}"
+                                            Background="{StaticResource DarkCard}"
+                                            Foreground="{StaticResource TextPrimary}"/>
+                                    <Separator Background="{StaticResource DarkBorder}"/>
                                     <MenuItem Header="Close" 
                                             Click="CloseTabMenuItem_Click" 
                                             Tag="{Binding}"
@@ -206,6 +212,12 @@
                                             Tag="{Binding}"
                                             Background="{StaticResource DarkCard}"
                                             Foreground="{StaticResource TextPrimary}"/>
+                                    <MenuItem Header="Move to Collection..." 
+                                            Click="MoveTabMenuItem_Click" 
+                                            Tag="{Binding}"
+                                            Background="{StaticResource DarkCard}"
+                                            Foreground="{StaticResource TextPrimary}"/>
+                                    <Separator Background="{StaticResource DarkBorder}"/>
                                     <MenuItem Header="Close" 
                                             Click="CloseTabMenuItem_Click" 
                                             Tag="{Binding}"
@@ -405,7 +417,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        
+
         <!-- TreeView Style -->
         <Style TargetType="TreeView">
             <Setter Property="Background" Value="{StaticResource DarkPanel}"/>
@@ -589,6 +601,27 @@
                             <HierarchicalDataTemplate.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <StackPanel.ContextMenu>
+                                            <ContextMenu Background="{StaticResource DarkCard}" 
+                                                       BorderBrush="{StaticResource DarkBorder}">
+                                                <MenuItem Header="Rename" 
+                                                        Click="RenameTabMenuItem_Click" 
+                                                        Tag="{Binding}"
+                                                        Background="{StaticResource DarkCard}"
+                                                        Foreground="{StaticResource TextPrimary}"/>
+                                                <MenuItem Header="Move to Collection..." 
+                                                        Click="MoveTabMenuItem_Click" 
+                                                        Tag="{Binding}"
+                                                        Background="{StaticResource DarkCard}"
+                                                        Foreground="{StaticResource TextPrimary}"/>
+                                                <Separator Background="{StaticResource DarkBorder}"/>
+                                                <MenuItem Header="Close" 
+                                                        Click="CloseTabMenuItem_Click" 
+                                                        Tag="{Binding}"
+                                                        Background="{StaticResource DarkCard}"
+                                                        Foreground="{StaticResource TextPrimary}"/>
+                                            </ContextMenu>
+                                        </StackPanel.ContextMenu>
                                         <Border Background="{Binding RequestType, Converter={StaticResource RequestTypeColorConverter}}"
                                                 CornerRadius="3"
                                                 Padding="6,2"

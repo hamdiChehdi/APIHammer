@@ -150,3 +150,21 @@ public class NotNullToVisibilityConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+public class TypeToBooleanConverter : IValueConverter
+{
+    public static readonly TypeToBooleanConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value == null) return false;
+        
+        // Return true if it's a RequestTab (child item), false if it's a TabCollection (parent item)
+        return value is RequestTab;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}

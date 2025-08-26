@@ -207,34 +207,27 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void RenameTabMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (SelectedTab == null) return;
-
-        try
+        if (sender is MenuItem menuItem && menuItem.Tag is RequestTab tabToRename)
         {
-            var dialog = new RenameTabDialog(SelectedTab.Name)
+            try
             {
-                Owner = this,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
+                var dialog = new RenameTabDialog(tabToRename.Name)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
 
-            if (dialog.ShowDialog() == true)
+                if (dialog.ShowDialog() == true)
+                {
+                    tabToRename.Name = dialog.TabName;
+                }
+            }
+            catch (System.Exception ex)
             {
-                SelectedTab.Name = dialog.TabName;
+                MessageBox.Show($"Error renaming tab: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        catch (System.Exception ex)
-        {
-            MessageBox.Show($"{ex.Message}", "Error", 
-                MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private void CloseTabMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        if (SelectedTab == null || SelectedCollection == null) return;
-
-        SelectedCollection.Tabs.Remove(SelectedTab);
-        SelectedTab = SelectedCollection.Tabs.FirstOrDefault();
     }
 
     private void CloseTab_Click(object sender, RoutedEventArgs e)
@@ -245,6 +238,87 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             if (SelectedTab == tab)
             {
                 SelectedTab = SelectedCollection.Tabs.FirstOrDefault();
+            }
+        }
+    }
+
+    private void MoveTabMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is RequestTab tabToMove)
+        {
+            // Find the current collection containing this tab
+            var currentCollection = TabCollections.FirstOrDefault(c => c.Tabs.Contains(tabToMove));
+            if (currentCollection == null) return;
+
+            // Check if there are other collections to move to
+            if (TabCollections.Count <= 1)
+            {
+                MessageBox.Show("There are no other collections to move this tab to. Create a new collection first.", 
+                    "No Target Collections", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                var dialog = new MoveTabDialog(tabToMove, TabCollections, currentCollection)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    TabCollection targetCollection;
+
+                    if (dialog.CreateNewCollection)
+                    {
+                        // Create new collection
+                        targetCollection = new TabCollection { Name = dialog.NewCollectionName };
+                        TabCollections.Add(targetCollection);
+                    }
+                    else if (dialog.SelectedTargetCollection != null)
+                    {
+                        targetCollection = dialog.SelectedTargetCollection;
+                    }
+                    else
+                    {
+                        return; // Should not happen, but safety check
+                    }
+
+                    // Move the tab
+                    currentCollection.Tabs.Remove(tabToMove);
+                    targetCollection.Tabs.Add(tabToMove);
+
+                    // Update selections
+                    SelectedCollection = targetCollection;
+                    SelectedTab = tabToMove;
+
+                    // Show success message
+                    MessageBox.Show($"Tab '{tabToMove.Name}' moved to collection '{targetCollection.Name}' successfully.", 
+                        "Tab Moved", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show($"Error moving tab: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private void CloseTabMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is RequestTab tabToClose)
+        {
+            // Find the collection containing this tab
+            var collection = TabCollections.FirstOrDefault(c => c.Tabs.Contains(tabToClose));
+            if (collection != null)
+            {
+                collection.Tabs.Remove(tabToClose);
+                if (SelectedTab == tabToClose)
+                {
+                    SelectedTab = collection.Tabs.FirstOrDefault();
+                }
             }
         }
     }
