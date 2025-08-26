@@ -15,7 +15,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="300"/>
             </Grid.RowDefinitions>
 
             <!-- Request Section Header -->
@@ -64,9 +64,8 @@
                 </Button>
 
                 <Button Grid.Column="3" 
-                        Content="Send Request" 
+                        Content="{Binding IsLoading, Converter={StaticResource LoadingToButtonTextConverter}}" 
                         Click="SendButton_Click"
-                        IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                         Style="{StaticResource SendButtonStyle}"/>
             </Grid>
 
@@ -675,16 +674,22 @@
                     BorderThickness="1"
                     CornerRadius="4"
                     MinHeight="200">
-                <TextBox Text="{Binding Response}"
-                         IsReadOnly="True"
-                         Background="Transparent"
-                         Foreground="{StaticResource TextSecondary}"
-                         BorderThickness="0"
-                         TextWrapping="Wrap"
-                         VerticalScrollBarVisibility="Auto"
-                         Padding="12"
-                         FontFamily="Consolas"
-                         FontSize="12"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                              HorizontalScrollBarVisibility="Auto"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              VirtualizingPanel.VirtualizationMode="Recycling"
+                              MinHeight="200">
+                    <TextBox Text="{Binding Response}"
+                             IsReadOnly="True"
+                             Background="Transparent"
+                             Foreground="{StaticResource TextSecondary}"
+                             BorderThickness="0"
+                             TextWrapping="Wrap"
+                             Padding="12"
+                             FontFamily="Consolas"
+                             FontSize="12"
+                             VirtualizingPanel.IsVirtualizing="True"/>
+                </ScrollViewer>
             </Border>
         </Grid>
     </ScrollViewer>

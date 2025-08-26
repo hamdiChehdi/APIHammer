@@ -24,6 +24,21 @@ public class InverseBoolConverter : IValueConverter
     }
 }
 
+public class LoadingToButtonTextConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is bool isLoading)
+            return isLoading ? "Cancel" : "Send Request";
+        return "Send Request";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 public class ConnectionStatusConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

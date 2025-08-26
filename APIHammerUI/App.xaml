@@ -7,6 +7,7 @@
     <Application.Resources>
         <!-- Converters -->
         <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <converters:LoadingToButtonTextConverter x:Key="LoadingToButtonTextConverter"/>
         <converters:ConnectionStatusConverter x:Key="ConnectionStatusConverter"/>
         <converters:RequestTypeIconConverter x:Key="RequestTypeIconConverter"/>
         <converters:RequestTypeColorConverter x:Key="RequestTypeColorConverter"/>
