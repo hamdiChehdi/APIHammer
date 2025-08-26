@@ -430,4 +430,144 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
+
+    private async void SendAllRequestsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is TabCollection collection)
+        {
+            try
+            {
+                // Count HTTP requests in the collection
+                var httpRequestCount = collection.Tabs.Count(tab => 
+                    tab.RequestType == RequestType.HTTP && 
+                    tab.Content is HttpRequestView httpView && 
+                    httpView.DataContext is HttpRequest httpRequest &&
+                    !string.IsNullOrWhiteSpace(httpRequest.Url));
+
+                if (httpRequestCount == 0)
+                {
+                    MessageBox.Show($"Collection '{collection.Name}' contains no valid HTTP requests to send.", 
+                        "No Requests", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Confirm the action
+                var confirmResult = MessageBox.Show(
+                    $"Send all {httpRequestCount} HTTP requests in collection '{collection.Name}'?\n\n" +
+                    "This will execute all requests concurrently and update their responses.",
+                    "Confirm Batch Request",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (confirmResult != MessageBoxResult.Yes)
+                    return;
+
+                // Show progress dialog
+                var progressDialog = new BatchRequestProgressDialog(collection)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                var dialogResult = progressDialog.ShowDialog();
+                
+                // Show summary when complete
+                if (dialogResult == true && progressDialog.Result != null)
+                {
+                    ShowBatchRequestSummary(progressDialog.Result, collection.Name);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show($"Error executing batch requests: {ex.Message}", "Batch Request Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private void ShowBatchRequestSummary(BatchRequestResult result, string collectionName)
+    {
+        string message;
+        MessageBoxImage icon;
+
+        if (result.WasCancelled)
+        {
+            message = $"Batch operation for '{collectionName}' was cancelled.\n\n" +
+                     $"Completed: {result.CompletedRequests}/{result.TotalRequests}\n" +
+                     $"Time: {result.TotalTime:mm\\:ss}";
+            icon = MessageBoxImage.Warning;
+        }
+        else if (result.FailedRequests > 0)
+        {
+            message = $"Batch operation for '{collectionName}' completed with errors.\n\n" +
+                     $"Total: {result.TotalRequests}\n" +
+                     $"Successful: {result.SuccessfulRequests}\n" +
+                     $"Failed: {result.FailedRequests}\n" +
+                     $"Time: {result.TotalTime:mm\\:ss\\.ff}";
+            icon = MessageBoxImage.Warning;
+        }
+        else
+        {
+            message = $"All requests in '{collectionName}' completed successfully!\n\n" +
+                     $"Requests: {result.SuccessfulRequests}\n" +
+                     $"Time: {result.TotalTime:mm\\:ss\\.ff}";
+            icon = MessageBoxImage.Information;
+        }
+
+        MessageBox.Show(message, "Batch Request Complete", MessageBoxButton.OK, icon);
+    }
+
+    private void RenameCollectionMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is TabCollection collection)
+        {
+            try
+            {
+                var dialog = new RenameTabDialog(collection.Name)
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    collection.Name = dialog.TabName;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show($"Error renaming collection: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private void ExportCollectionMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is TabCollection collection)
+        {
+            // TODO: Implement collection export functionality
+            MessageBox.Show($"Export functionality for collection '{collection.Name}' will be implemented in a future version.", 
+                "Feature Coming Soon", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+
+    private void DeleteCollectionMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is TabCollection collection)
+        {
+            var result = MessageBox.Show($"Are you sure you want to delete collection '{collection.Name}' and all its tabs?", 
+                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                TabCollections.Remove(collection);
+                if (SelectedCollection == collection)
+                {
+                    SelectedCollection = TabCollections.FirstOrDefault();
+                    SelectedTab = null;
+                }
+            }
+        }
+    }
 }

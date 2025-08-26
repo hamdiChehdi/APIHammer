@@ -275,173 +275,50 @@ namespace APIHammerUI.Views
             _uiUpdateTimer?.Stop();
             _currentRequestCancellation = new CancellationTokenSource();
 
-            // Start the request in a fire-and-forget manner to avoid blocking the UI
-            _ = Task.Run(async () => await SendHttpRequestAsync(httpRequest, _currentRequestCancellation.Token));
+            // Start the request using the HttpRequestService
+            _ = Task.Run(async () => await SendHttpRequestWithServiceAsync(httpRequest, _currentRequestCancellation.Token));
         }
 
-        private async Task SendHttpRequestAsync(HttpRequest httpRequest, CancellationToken cancellationToken)
+        private async Task SendHttpRequestWithServiceAsync(HttpRequest httpRequest, CancellationToken cancellationToken)
         {
-            HttpRequestMessage? request = null;
-            HttpResponseMessage? response = null;
-            Stream? responseStream = null;
-            
             try
             {
-                // Reset state
-                _currentResponseContent = null;
-                _isStreamingComplete = false;
-
                 // Update UI on the UI thread
                 await Dispatcher.InvokeAsync(() =>
                 {
                     httpRequest.IsLoading = true;
                     httpRequest.Response = "Sending request...";
-                    
-                    // Reset response metadata
-                    httpRequest.ResponseTime = null;
-                    httpRequest.ResponseSize = null;
-                    httpRequest.RequestDateTime = DateTime.Now;
                 }, DispatcherPriority.Background);
 
-                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-                request = new HttpRequestMessage();
-                
-                // Set method
-                request.Method = httpRequest.Method switch
-                {
-                    "GET" => HttpMethod.Get,
-                    "POST" => HttpMethod.Post,
-                    "PUT" => HttpMethod.Put,
-                    "DELETE" => HttpMethod.Delete,
-                    "PATCH" => HttpMethod.Patch,
-                    "HEAD" => HttpMethod.Head,
-                    "OPTIONS" => HttpMethod.Options,
-                    _ => HttpMethod.Get
-                };
+                // Use the HttpRequestService
+                var httpRequestService = new APIHammerUI.Services.HttpRequestService();
+                var result = await httpRequestService.SendRequestAsync(httpRequest, cancellationToken);
 
-                // Use the FullUrl which includes query parameters
-                if (!Uri.TryCreate(httpRequest.FullUrl, UriKind.Absolute, out var uri))
-                {
-                    await Dispatcher.InvokeAsync(() =>
-                    {
-                        httpRequest.Response = "Invalid URL format. Please check your base URL and query parameters.";
-                        httpRequest.IsLoading = false;
-                    }, DispatcherPriority.Background);
-                    return;
-                }
-
-                request.RequestUri = uri;
-
-                // Apply authentication
-                ApplyAuthentication(request, httpRequest.Authentication);
-
-                // Set headers from the dynamic header collection
-                foreach (var headerItem in httpRequest.Headers.Where(h => h.IsEnabled && !string.IsNullOrWhiteSpace(h.Key)))
-                {
-                    try
-                    {
-                        // Skip Authorization header if it's already set by authentication
-                        if (headerItem.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) && 
-                            (httpRequest.Authentication.Type == AuthenticationType.BasicAuth || 
-                             httpRequest.Authentication.Type == AuthenticationType.BearerToken))
-                            continue;
-
-                        // Try to add to request headers first
-                        request.Headers.TryAddWithoutValidation(headerItem.Key, headerItem.Value);
-                    }
-                    catch
-                    {
-                        // If it fails, it might be a content header, we'll handle it after creating content
-                    }
-                }
-
-                // Set body
-                if (!string.IsNullOrWhiteSpace(httpRequest.Body) && 
-                    (httpRequest.Method == "POST" || httpRequest.Method == "PUT" || httpRequest.Method == "PATCH"))
-                {
-                    // Determine content type from headers or default to JSON
-                    var contentType = httpRequest.Headers
-                        .FirstOrDefault(h => h.IsEnabled && h.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
-                        ?.Value ?? "application/json";
-
-                    request.Content = new StringContent(httpRequest.Body, Encoding.UTF8, contentType);
-
-                    // Add content-specific headers
-                    foreach (var headerItem in httpRequest.Headers.Where(h => h.IsEnabled && !string.IsNullOrWhiteSpace(h.Key)))
-                    {
-                        if (IsContentHeader(headerItem.Key))
-                        {
-                            try
-                            {
-                                request.Content.Headers.TryAddWithoutValidation(headerItem.Key, headerItem.Value);
-                            }
-                            catch
-                            {
-                                // Ignore invalid content headers
-                            }
-                        }
-                    }
-                }
-
-                // Update UI to show that request is being sent
+                // Update UI with results
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    httpRequest.Response = "Request sent, waiting for response...";
+                    httpRequest.IsLoading = false;
+                    httpRequest.Response = result.Response;
+                    httpRequest.ResponseTime = result.ResponseTime;
+                    httpRequest.ResponseSize = result.ResponseSize;
+                    httpRequest.RequestDateTime = result.RequestDateTime;
                 }, DispatcherPriority.Background);
 
-                // Send the request with streaming support
-                response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                stopwatch.Stop();
-                
-                // Capture response metadata
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    httpRequest.ResponseTime = stopwatch.Elapsed;
-                }, DispatcherPriority.Background);
+                // Show notification
+                var title = result.Success ? "Request Completed" : "Request Failed";
+                var message = result.Success 
+                    ? $"HTTP {httpRequest.Method} request completed successfully\n" +
+                      $"Time: {httpRequest.ResponseTimeFormatted}\n" +
+                      $"Size: {httpRequest.ResponseSizeFormatted}"
+                    : $"HTTP request failed: {result.ErrorMessage}";
 
-                // Build response headers
-                var responseHeaders = BuildResponseHeaders(response, request, httpRequest);
-
-                // Check response size first
-                var contentLength = response.Content.Headers.ContentLength;
-                if (contentLength.HasValue && contentLength.Value > MAX_RESPONSE_SIZE)
-                {
-                    await Dispatcher.InvokeAsync(() =>
-                    {
-                        httpRequest.Response = responseHeaders + 
-                            $"\nResponse too large ({contentLength.Value / (1024 * 1024):F1} MB). " +
-                            "Maximum supported size is 10 MB.\n" +
-                            "Consider using a streaming client for large responses.";
-                        httpRequest.ResponseSize = contentLength.Value;
-                    }, DispatcherPriority.Background);
-                    return;
-                }
-
-                // Stream the response content efficiently
-                responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                
-                // Start UI update timer for large responses
-                var isLargeResponse = contentLength.HasValue && contentLength.Value > LARGE_RESPONSE_THRESHOLD;
-                if (isLargeResponse)
-                {
-                    StartProgressTimer(httpRequest, responseHeaders);
-                }
-
-                // Read response content efficiently
-                await ReadResponseContentAsync(responseStream, response, httpRequest, responseHeaders, cancellationToken);
-
-                // Show success notification
-                await ShowNotificationAsync("Request Completed", 
-                    $"HTTP {httpRequest.Method} request completed successfully\n" +
-                    $"Status: {(int)response.StatusCode} {response.StatusCode}\n" +
-                    $"Time: {httpRequest.ResponseTimeFormatted}\n" +
-                    $"Size: {httpRequest.ResponseSizeFormatted}", 
-                    isSuccess: true);
+                await ShowNotificationAsync(title, message, result.Success);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 await Dispatcher.InvokeAsync(() =>
                 {
+                    httpRequest.IsLoading = false;
                     httpRequest.Response = "Request was cancelled.";
                 }, DispatcherPriority.Background);
 
@@ -453,28 +330,13 @@ namespace APIHammerUI.Views
             {
                 await Dispatcher.InvokeAsync(() =>
                 {
+                    httpRequest.IsLoading = false;
                     httpRequest.Response = $"Error: {ex.Message}\n\nRequest URL: {httpRequest.FullUrl}";
                 }, DispatcherPriority.Background);
 
                 await ShowNotificationAsync("Request Failed", 
                     $"HTTP request failed: {ex.Message}", 
                     isSuccess: false);
-            }
-            finally
-            {
-                // Cleanup
-                _uiUpdateTimer?.Stop();
-                _isStreamingComplete = true;
-                
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    httpRequest.IsLoading = false;
-                }, DispatcherPriority.Background);
-
-                // Dispose resources
-                responseStream?.Dispose();
-                response?.Dispose();
-                request?.Dispose();
             }
         }
 

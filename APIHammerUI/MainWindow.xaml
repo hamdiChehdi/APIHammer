@@ -599,6 +599,37 @@
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate ItemsSource="{Binding Tabs}">
                             <StackPanel Orientation="Horizontal">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu Background="{StaticResource DarkCard}" 
+                                               BorderBrush="{StaticResource DarkBorder}">
+                                        <MenuItem Header="Send All Requests" 
+                                                Click="SendAllRequestsMenuItem_Click" 
+                                                Tag="{Binding}"
+                                                Background="{StaticResource DarkCard}"
+                                                Foreground="{StaticResource TextPrimary}">
+                                            <MenuItem.Icon>
+                                                <TextBlock Text="🚀" FontSize="12"/>
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <Separator Background="{StaticResource DarkBorder}"/>
+                                        <MenuItem Header="Rename Collection" 
+                                                Click="RenameCollectionMenuItem_Click" 
+                                                Tag="{Binding}"
+                                                Background="{StaticResource DarkCard}"
+                                                Foreground="{StaticResource TextPrimary}"/>
+                                        <MenuItem Header="Export Collection..." 
+                                                Click="ExportCollectionMenuItem_Click" 
+                                                Tag="{Binding}"
+                                                Background="{StaticResource DarkCard}"
+                                                Foreground="{StaticResource TextPrimary}"/>
+                                        <Separator Background="{StaticResource DarkBorder}"/>
+                                        <MenuItem Header="Delete Collection" 
+                                                Click="DeleteCollectionMenuItem_Click" 
+                                                Tag="{Binding}"
+                                                Background="{StaticResource DarkCard}"
+                                                Foreground="{StaticResource ErrorRed}"/>
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
                                 <materialIcons:MaterialIcon Kind="Group"
                                                             Margin="0,0,6,0"
                                                             Foreground="{StaticResource AccentBlue}"

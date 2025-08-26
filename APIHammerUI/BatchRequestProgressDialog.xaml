@@ -1,0 +1,157 @@
+<Window x:Class="APIHammerUI.BatchRequestProgressDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Sending Collection Requests" 
+        Height="300" Width="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#1E1E1E">
+
+    <Grid Background="{StaticResource DarkBackground}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" 
+                Background="{StaticResource DarkPanel}"
+                BorderBrush="{StaticResource DarkBorder}"
+                BorderThickness="0,0,0,1"
+                Padding="20,16">
+            <StackPanel>
+                <TextBlock x:Name="TitleTextBlock"
+                           Text="Sending Collection Requests"
+                           FontSize="18"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource TextPrimary}"/>
+                <TextBlock x:Name="CollectionNameTextBlock"
+                           Text="{Binding CollectionName, StringFormat='Collection: {0}'}"
+                           FontSize="12"
+                           Foreground="{StaticResource TextSecondary}"
+                           Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Progress Area -->
+        <ScrollViewer Grid.Row="1" 
+                      Margin="20"
+                      VerticalScrollBarVisibility="Auto"
+                      Background="{StaticResource DarkCard}"
+                      BorderBrush="{StaticResource DarkBorder}"
+                      BorderThickness="1">
+            <StackPanel Margin="16">
+                <!-- Overall Progress -->
+                <TextBlock x:Name="OverallProgressTextBlock"
+                           Text="Preparing requests..."
+                           FontSize="14"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource TextPrimary}"
+                           Margin="0,0,0,8"/>
+                
+                <ProgressBar x:Name="OverallProgressBar"
+                             Height="8"
+                             Background="{StaticResource DarkPanel}"
+                             Foreground="{StaticResource AccentBlue}"
+                             Margin="0,0,0,16"/>
+
+                <!-- Current Request -->
+                <TextBlock Text="Current Request:"
+                           FontSize="12"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource TextSecondary}"
+                           Margin="0,0,0,4"/>
+                
+                <TextBlock x:Name="CurrentRequestTextBlock"
+                           Text="Initializing..."
+                           FontSize="13"
+                           Foreground="{StaticResource TextPrimary}"
+                           Margin="0,0,0,16"/>
+
+                <!-- Statistics -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Total"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextMuted}"/>
+                        <TextBlock x:Name="TotalRequestsTextBlock"
+                                   Text="0"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource AccentBlue}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Completed"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextMuted}"/>
+                        <TextBlock x:Name="CompletedRequestsTextBlock"
+                                   Text="0"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource SuccessGreen}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Failed"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextMuted}"/>
+                        <TextBlock x:Name="FailedRequestsTextBlock"
+                                   Text="0"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource ErrorRed}"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Elapsed Time -->
+                <TextBlock x:Name="ElapsedTimeTextBlock"
+                           Text="Elapsed: 00:00"
+                           FontSize="12"
+                           Foreground="{StaticResource TextMuted}"
+                           HorizontalAlignment="Center"
+                           Margin="0,16,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Status Message -->
+        <Border Grid.Row="2"
+                Background="{StaticResource DarkPanel}"
+                BorderBrush="{StaticResource DarkBorder}"
+                BorderThickness="0,1,0,1"
+                Padding="20,12">
+            <TextBlock x:Name="StatusTextBlock"
+                       Text="Initializing batch request operation..."
+                       FontSize="12"
+                       Foreground="{StaticResource TextSecondary}"/>
+        </Border>
+
+        <!-- Buttons -->
+        <Border Grid.Row="3"
+                Background="{StaticResource DarkCard}"
+                Padding="20,16">
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+                <Button x:Name="CancelButton"
+                        Content="Cancel"
+                        Style="{StaticResource ModernButtonStyle}"
+                        Background="{StaticResource ErrorRed}"
+                        Click="CancelButton_Click"
+                        Margin="0,0,12,0"/>
+                <Button x:Name="CloseButton"
+                        Content="Close"
+                        Style="{StaticResource ModernButtonStyle}"
+                        Click="CloseButton_Click"
+                        IsEnabled="False"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
