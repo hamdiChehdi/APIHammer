@@ -1,39 +1,61 @@
 <Window x:Class="APIHammerUI.MoveTabDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Move Tab to Collection" Height="350" Width="450"
+        xmlns:materialIcons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+        Title="Move Tab to Collection" Height="480" Width="520"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource DarkPanel}">
     
     <Window.Resources>
-        <!-- Dialog Button Style -->
-        <Style x:Key="DialogButtonStyle" TargetType="Button">
+        <!-- Modern Card Style -->
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource DarkCard}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource DarkBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Black" BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Primary Button Style -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource AccentBlue}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="20,10"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Padding" Value="20,12"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="MinWidth" Value="80"/>
+            <Setter Property="MinWidth" Value="100"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4">
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Margin="{TemplateBinding Padding}"/>
+                                            VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource AccentBlueHover}"/>
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource AccentBlueHover}"/>
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#007ACC" BlurRadius="8" ShadowDepth="0" Opacity="0.4"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#0F5A99"/>
+                                <Setter TargetName="Border" Property="Background" Value="#0F5A99"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource TextMuted}"/>
+                                <Setter Property="Opacity" Value="0.6"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -41,34 +63,60 @@
             </Setter>
         </Style>
 
-        <!-- Cancel Button Style -->
-        <Style x:Key="CancelButtonStyle" TargetType="Button" BasedOn="{StaticResource DialogButtonStyle}">
-            <Setter Property="Background" Value="{StaticResource DarkCard}"/>
+        <!-- Secondary Button Style -->
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
             <Setter Property="BorderBrush" Value="{StaticResource DarkBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#4A4A4A"/>
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="Padding" Value="20,12"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="MinWidth" Value="100"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource DarkCard}"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#4A4A4A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Collection Item Style -->
         <Style x:Key="CollectionItemStyle" TargetType="ListBoxItem">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="Border"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}"
-                                CornerRadius="4">
+                                Background="{StaticResource DarkPanel}"
+                                BorderBrush="{StaticResource DarkBorder}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="16,12">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -78,37 +126,57 @@
                                 
                                 <!-- Collection Icon -->
                                 <Border Grid.Column="0"
-                                        Width="24" Height="24"
+                                        Width="36" Height="36"
                                         Background="{StaticResource AccentBlue}"
-                                        CornerRadius="4"
+                                        CornerRadius="8"
                                         Margin="0,0,12,0">
-                                    <TextBlock Text="??"
-                                             HorizontalAlignment="Center"
-                                             VerticalAlignment="Center"
-                                             FontSize="12"/>
+                                    <materialIcons:MaterialIcon Kind="FolderMultiple"
+                                                              Foreground="White"
+                                                              Width="20" Height="20"
+                                                              HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
                                 </Border>
                                 
-                                <!-- Collection Name -->
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding Name}"
-                                           VerticalAlignment="Center"
-                                           FontSize="14"
-                                           Foreground="{StaticResource TextPrimary}"/>
+                                <!-- Collection Info -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}"
+                                               FontSize="15"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextPrimary}"
+                                               Margin="0,0,0,2"/>
+                                    <TextBlock Text="{Binding Tabs.Count, StringFormat='{}{0} tabs'}"
+                                               FontSize="12"
+                                               Foreground="{StaticResource TextMuted}"/>
+                                </StackPanel>
                                 
-                                <!-- Tab Count -->
-                                <TextBlock Grid.Column="2"
-                                           Text="{Binding Tabs.Count, StringFormat='({0} tabs)'}"
-                                           VerticalAlignment="Center"
-                                           FontSize="12"
-                                           Foreground="{StaticResource TextMuted}"/>
+                                <!-- Selection Indicator -->
+                                <Border Grid.Column="2"
+                                        x:Name="SelectionIndicator"
+                                        Width="20" Height="20"
+                                        Background="{StaticResource AccentBlue}"
+                                        CornerRadius="10"
+                                        Visibility="Collapsed">
+                                    <materialIcons:MaterialIcon Kind="Check"
+                                                              Foreground="White"
+                                                              Width="12" Height="12"/>
+                                </Border>
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="Border" Property="Background" Value="{StaticResource AccentBlue}"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentBlueHover}"/>
+                                <Setter TargetName="SelectionIndicator" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="SelectionIndicator" Property="Background" Value="White"/>
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#007ACC" BlurRadius="12" ShadowDepth="0" Opacity="0.3"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Border" Property="Background" Value="{StaticResource DarkCard}"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -116,32 +184,39 @@
             </Setter>
         </Style>
 
-        <!-- Dialog TextBox Style -->
-        <Style x:Key="DialogTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Background" Value="{StaticResource DarkCard}"/>
+        <!-- Modern TextBox Style -->
+        <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource DarkPanel}"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
             <Setter Property="BorderBrush" Value="{StaticResource DarkBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="8,6"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Height" Value="40"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
-                        <Border Background="{TemplateBinding Background}"
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4">
+                                CornerRadius="6">
                             <ScrollViewer x:Name="PART_ContentHost"
                                         Margin="{TemplateBinding Padding}"
                                         VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                                <Setter TargetName="Border" Property="BorderThickness" Value="2"/>
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#007ACC" BlurRadius="8" ShadowDepth="0" Opacity="0.3"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="BorderBrush" Value="{StaticResource AccentBlueHover}"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentBlueHover}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -150,10 +225,8 @@
         </Style>
     </Window.Resources>
 
-    <Border Background="{StaticResource DarkPanel}" 
-            CornerRadius="8"
-            Margin="1">
-        <Grid Margin="24">
+    <Border Style="{StaticResource CardStyle}" Margin="8">
+        <Grid Margin="32,24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -162,85 +235,161 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Title -->
-            <TextBlock Grid.Row="0" 
-                       Text="Move Tab to Collection" 
-                       FontSize="18" 
-                       FontWeight="Medium"
-                       Foreground="{StaticResource TextPrimary}"
-                       Margin="0,0,0,8"/>
-
-            <!-- Subtitle -->
-            <TextBlock Grid.Row="1" 
-                       x:Name="SubtitleTextBlock"
-                       FontSize="13"
-                       Foreground="{StaticResource TextSecondary}"
-                       Margin="0,0,0,16"/>
+            <!-- Header Section -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,24">
+                <Border Width="48" Height="48"
+                        Background="{StaticResource AccentBlue}"
+                        CornerRadius="12"
+                        Margin="0,0,16,0">
+                    <materialIcons:MaterialIcon Kind="FolderMove"
+                                              Foreground="White"
+                                              Width="24" Height="24"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Move Tab to Collection" 
+                               FontSize="22" 
+                               FontWeight="Bold"
+                               Foreground="{StaticResource TextPrimary}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock x:Name="SubtitleTextBlock"
+                               FontSize="14"
+                               Foreground="{StaticResource TextSecondary}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </StackPanel>
             
-            <!-- Collections List -->
-            <Border Grid.Row="2" 
+            <!-- Instructions -->
+            <Border Grid.Row="1" 
+                    Background="{StaticResource DarkCard}"
                     BorderBrush="{StaticResource DarkBorder}"
                     BorderThickness="1"
-                    CornerRadius="4"
-                    Background="{StaticResource DarkCard}"
-                    Margin="0,0,0,16">
-                <ListBox x:Name="CollectionsListBox"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         ItemContainerStyle="{StaticResource CollectionItemStyle}"
-                         SelectionMode="Single"
-                         Margin="8"/>
+                    CornerRadius="8"
+                    Padding="16,12"
+                    Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal">
+                    <materialIcons:MaterialIcon Kind="Information"
+                                              Foreground="{StaticResource AccentBlue}"
+                                              Width="20" Height="20"
+                                              Margin="0,0,12,0"
+                                              VerticalAlignment="Top"/>
+                    <TextBlock Text="Select an existing collection below, or create a new one by entering a name and clicking 'Create New Collection'."
+                               FontSize="13"
+                               Foreground="{StaticResource TextSecondary}"
+                               TextWrapping="Wrap"
+                               LineHeight="18"/>
+                </StackPanel>
             </Border>
 
-            <!-- New Collection Option -->
-            <Border Grid.Row="3"
-                    BorderBrush="{StaticResource DarkBorder}"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    Background="{StaticResource DarkCard}"
-                    Margin="0,0,0,16">
-                <Grid Margin="12,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+            <!-- Main Content -->
+            <ScrollViewer Grid.Row="2" 
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Margin="0,0,0,24">
+                <StackPanel>
+                    <!-- Existing Collections -->
+                    <TextBlock Text="Existing Collections"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimary}"
+                               Margin="0,0,0,12"/>
                     
-                    <StackPanel Grid.Column="0" Orientation="Vertical">
-                        <TextBlock Text="Create New Collection"
-                                   FontSize="14"
-                                   FontWeight="Medium"
-                                   Foreground="{StaticResource TextPrimary}"/>
-                        <TextBox x:Name="NewCollectionNameTextBox"
-                                 Style="{StaticResource DialogTextBoxStyle}"
-                                 Margin="0,4,0,0"
-                                 TextChanged="NewCollectionNameTextBox_TextChanged"/>
-                    </StackPanel>
-                    
-                    <Button Grid.Column="1"
-                            Content="Create"
-                            x:Name="CreateCollectionButton"
-                            Style="{StaticResource DialogButtonStyle}"
-                            Click="CreateNewCollection_Click"
-                            VerticalAlignment="Bottom"
-                            IsEnabled="False"
-                            Padding="16,8"/>
-                </Grid>
-            </Border>
+                    <ListBox x:Name="CollectionsListBox"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                             ItemContainerStyle="{StaticResource CollectionItemStyle}"
+                             SelectionMode="Single"
+                             Margin="0,0,0,32"/>
 
-            <!-- Buttons -->
+                    <!-- Or Divider -->
+                    <Grid Margin="0,0,0,24">
+                        <Rectangle Height="1" 
+                                   Fill="{StaticResource DarkBorder}"
+                                   HorizontalAlignment="Stretch"/>
+                        <Border Background="{StaticResource DarkPanel}"
+                                Padding="16,0"
+                                HorizontalAlignment="Center">
+                            <TextBlock Text="OR"
+                                       FontSize="12"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextMuted}"/>
+                        </Border>
+                    </Grid>
+
+                    <!-- Create New Collection -->
+                    <Border Background="{StaticResource DarkCard}"
+                            BorderBrush="{StaticResource DarkBorder}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="20,16">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                <materialIcons:MaterialIcon Kind="FolderPlus"
+                                                          Foreground="{StaticResource AccentBlue}"
+                                                          Width="20" Height="20"
+                                                          Margin="0,0,8,0"/>
+                                <TextBlock Text="Create New Collection"
+                                           FontSize="16"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimary}"/>
+                            </StackPanel>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <Grid Grid.Column="0" Margin="0,0,12,0">
+                                    <TextBox x:Name="NewCollectionNameTextBox"
+                                             Style="{StaticResource ModernTextBoxStyle}"
+                                             TextChanged="NewCollectionNameTextBox_TextChanged"/>
+                                    <TextBlock x:Name="PlaceholderText"
+                                               Text="Enter collection name..."
+                                               FontSize="14"
+                                               Foreground="{StaticResource TextMuted}"
+                                               IsHitTestVisible="False"
+                                               Margin="12,10"
+                                               VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Text, ElementName=NewCollectionNameTextBox}" Value="">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                                
+                                <Button Grid.Column="1"
+                                        Content="Create"
+                                        x:Name="CreateCollectionButton"
+                                        Style="{StaticResource PrimaryButtonStyle}"
+                                        Click="CreateNewCollection_Click"
+                                        IsEnabled="False"
+                                        Padding="20,10"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Action Buttons -->
             <StackPanel Grid.Row="4" 
                         Orientation="Horizontal" 
                         HorizontalAlignment="Right">
                 <Button Content="Cancel" 
-                        Style="{StaticResource CancelButtonStyle}"
+                        Style="{StaticResource SecondaryButtonStyle}"
                         IsCancel="True"
                         Click="Cancel_Click"
                         Margin="0,0,12,0"/>
                 <Button Content="Move Tab" 
                         x:Name="MoveButton"
-                        Style="{StaticResource DialogButtonStyle}"
+                        Style="{StaticResource PrimaryButtonStyle}"
                         IsDefault="True"
                         Click="Move_Click"
                         IsEnabled="False"/>

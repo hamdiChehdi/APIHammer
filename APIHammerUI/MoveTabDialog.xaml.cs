@@ -23,7 +23,7 @@ public partial class MoveTabDialog : Window
         _currentCollection = currentCollection;
         
         // Set subtitle with tab name
-        SubtitleTextBlock.Text = $"Select a destination collection for '{tabToMove.Name}':";
+        SubtitleTextBlock.Text = $"Choose where to move '{tabToMove.Name}'";
         
         // Populate collections list (exclude current collection)
         var otherCollections = availableCollections.Where(c => c != currentCollection).ToList();
@@ -32,8 +32,14 @@ public partial class MoveTabDialog : Window
         // Enable Move button when a collection is selected
         CollectionsListBox.SelectionChanged += (s, e) => UpdateMoveButtonState();
         
-        // Focus on the list
-        Loaded += (s, e) => CollectionsListBox.Focus();
+        // Focus management
+        Loaded += (s, e) => 
+        {
+            if (otherCollections.Any())
+                CollectionsListBox.Focus();
+            else
+                NewCollectionNameTextBox.Focus();
+        };
     }
 
     private void UpdateMoveButtonState()
@@ -64,14 +70,17 @@ public partial class MoveTabDialog : Window
         {
             MessageBox.Show("Collection name cannot be empty.", "Invalid Name", 
                 MessageBoxButton.OK, MessageBoxImage.Warning);
+            NewCollectionNameTextBox.Focus();
             return;
         }
 
         // Check if collection name already exists
         if (_availableCollections.Any(c => c.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase)))
         {
-            MessageBox.Show("A collection with this name already exists.", "Duplicate Name", 
+            MessageBox.Show("A collection with this name already exists. Please choose a different name.", "Duplicate Name", 
                 MessageBoxButton.OK, MessageBoxImage.Warning);
+            NewCollectionNameTextBox.SelectAll();
+            NewCollectionNameTextBox.Focus();
             return;
         }
 
@@ -94,7 +103,7 @@ public partial class MoveTabDialog : Window
         }
         else
         {
-            MessageBox.Show("Please select a collection or create a new one.", "No Selection", 
+            MessageBox.Show("Please select an existing collection or create a new one.", "No Selection", 
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
