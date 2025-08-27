@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using APIHammerUI.Models;
-using Newtonsoft.Json;
 using System.Threading;
 using System.IO;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using System.Text.Json;
 
 namespace APIHammerUI.Views
 {
@@ -446,14 +446,13 @@ namespace APIHammerUI.Views
                 {
                     if (response.Content.Headers.ContentType?.MediaType?.Contains("json") == true)
                     {
-                        // Use more memory-efficient JSON formatting
-                        using var stringReader = new StringReader(content);
-                        using var jsonReader = new JsonTextReader(stringReader);
-                        using var stringWriter = new StringWriter();
-                        using var jsonWriter = new JsonTextWriter(stringWriter) { Formatting = Formatting.Indented };
-
-                        jsonWriter.WriteToken(jsonReader);
-                        return stringWriter.ToString();
+                        // Use System.Text.Json for formatting
+                        using var document = JsonDocument.Parse(content);
+                        var options = new JsonSerializerOptions
+                        {
+                            WriteIndented = true
+                        };
+                        return JsonSerializer.Serialize(document, options);
                     }
                 }
                 catch
@@ -585,8 +584,12 @@ namespace APIHammerUI.Views
                 bool isValidJson = true;
                 try
                 {
-                    var parsedJson = JsonConvert.DeserializeObject(jsonContent);
-                    formattedJson = JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+                    using var document = JsonDocument.Parse(jsonContent);
+                    var options = new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    };
+                    formattedJson = JsonSerializer.Serialize(document, options);
                 }
                 catch (JsonException)
                 {

@@ -6,8 +6,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using APIHammerUI.Models;
-using APIHammerUI.Views;
 using APIHammerUI.Services;
+using APIHammerUI.Views;
+// using APIHammerUI.Services; // TODO: Re-enable when OpenAPI import is fixed
 
 namespace APIHammerUI;
 
@@ -324,7 +325,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void ImportOpenApi_Click(object sender, RoutedEventArgs e)
+    /*
+    // TODO: Re-enable OpenAPI import after fixing Microsoft.OpenApi dependencies
+    private async void ImportOpenApi_Click(object sender, RoutedEventArgs e)
     {
         try
         {
@@ -423,6 +426,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return $"{httpRequest.Method} Request";
         }
     }
+    */
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

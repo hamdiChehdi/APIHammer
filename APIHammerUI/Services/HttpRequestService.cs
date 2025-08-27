@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using APIHammerUI.Models;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace APIHammerUI.Services;
 
@@ -285,14 +285,13 @@ public class HttpRequestService
             {
                 if (response.Content.Headers.ContentType?.MediaType?.Contains("json") == true)
                 {
-                    // Use more memory-efficient JSON formatting
-                    using var stringReader = new StringReader(content);
-                    using var jsonReader = new JsonTextReader(stringReader);
-                    using var stringWriter = new StringWriter();
-                    using var jsonWriter = new JsonTextWriter(stringWriter) { Formatting = Formatting.Indented };
-
-                    jsonWriter.WriteToken(jsonReader);
-                    return stringWriter.ToString();
+                    // Use System.Text.Json for formatting
+                    using var document = JsonDocument.Parse(content);
+                    var options = new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    };
+                    return JsonSerializer.Serialize(document, options);
                 }
             }
             catch
