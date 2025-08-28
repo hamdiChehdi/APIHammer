@@ -23,14 +23,9 @@ namespace APIHammerUI.Views
         };
         private CancellationTokenSource? _currentRequestCancellation;
         private DispatcherTimer? _uiUpdateTimer;
-        private volatile string? _currentResponseContent;
-        private volatile bool _isStreamingComplete;
 
         // Memory management constants
         private const int MAX_RESPONSE_SIZE = 10 * 1024 * 1024; // 10MB limit
-        private const int BUFFER_SIZE = 16384; // 16KB buffer
-        private const int UI_UPDATE_INTERVAL_MS = 1000; // Update UI every 1 second
-        private const int LARGE_RESPONSE_THRESHOLD = 1024 * 1024; // 1MB threshold
 
         static HttpRequestView()
         {
