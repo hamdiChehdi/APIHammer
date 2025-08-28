@@ -23,6 +23,7 @@ namespace APIHammerUI.Views
         };
         private CancellationTokenSource? _currentRequestCancellation;
         private DispatcherTimer? _uiUpdateTimer;
+        private bool _isDisposing = false;
 
         // Memory management constants
         private const int MAX_RESPONSE_SIZE = 10 * 1024 * 1024; // 10MB limit
@@ -46,7 +47,24 @@ namespace APIHammerUI.Views
 
         private void HttpRequestView_Unloaded(object sender, RoutedEventArgs e)
         {
-            // Cleanup when control is unloaded
+            // Only cleanup UI resources when unloaded, but don't cancel ongoing requests
+            // This allows tabs to work independently - switching tabs won't cancel requests
+            _uiUpdateTimer?.Stop();
+            
+            // Only cancel request if the control is being permanently disposed
+            // This happens when the tab is closed, not when switching between tabs
+            if (_isDisposing)
+            {
+                _currentRequestCancellation?.Cancel();
+            }
+        }
+
+        /// <summary>
+        /// Call this method when the tab is being permanently closed
+        /// </summary>
+        public void Dispose()
+        {
+            _isDisposing = true;
             _currentRequestCancellation?.Cancel();
             _uiUpdateTimer?.Stop();
         }
@@ -265,7 +283,7 @@ namespace APIHammerUI.Views
                 return;
             }
 
-            // Cancel any existing request
+            // Cancel any existing request for this tab
             _currentRequestCancellation?.Cancel();
             _uiUpdateTimer?.Stop();
             _currentRequestCancellation = new CancellationTokenSource();
@@ -289,9 +307,17 @@ namespace APIHammerUI.Views
                 var httpRequestService = new APIHammerUI.Services.HttpRequestService();
                 var result = await httpRequestService.SendRequestAsync(httpRequest, cancellationToken);
 
+                // Check if cancellation was requested before updating UI
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 // Update UI with results
                 await Dispatcher.InvokeAsync(() =>
                 {
+                    // Double-check we haven't been cancelled while waiting for UI thread
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+                        
                     httpRequest.IsLoading = false;
                     httpRequest.Response = result.Response;
                     httpRequest.ResponseTime = result.ResponseTime;
@@ -299,39 +325,50 @@ namespace APIHammerUI.Views
                     httpRequest.RequestDateTime = result.RequestDateTime;
                 }, DispatcherPriority.Background);
 
-                // Show notification
-                var title = result.Success ? "Request Completed" : "Request Failed";
-                var message = result.Success 
-                    ? $"HTTP {httpRequest.Method} request completed successfully\n" +
-                      $"Time: {httpRequest.ResponseTimeFormatted}\n" +
-                      $"Size: {httpRequest.ResponseSizeFormatted}"
-                    : $"HTTP request failed: {result.ErrorMessage}";
+                // Show notification only if not cancelled
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    var title = result.Success ? "Request Completed" : "Request Failed";
+                    var message = result.Success 
+                        ? $"HTTP {httpRequest.Method} request completed successfully\n" +
+                          $"Time: {httpRequest.ResponseTimeFormatted}\n" +
+                          $"Size: {httpRequest.ResponseSizeFormatted}"
+                        : $"HTTP request failed: {result.ErrorMessage}";
 
-                await ShowNotificationAsync(title, message, result.Success);
+                    await ShowNotificationAsync(title, message, result.Success);
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                await Dispatcher.InvokeAsync(() =>
+                // Only update UI if the control is still loaded and hasn't been disposed
+                if (!_isDisposing && IsLoaded)
                 {
-                    httpRequest.IsLoading = false;
-                    httpRequest.Response = "Request was cancelled.";
-                }, DispatcherPriority.Background);
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        httpRequest.IsLoading = false;
+                        httpRequest.Response = "Request was cancelled.";
+                    }, DispatcherPriority.Background);
 
-                await ShowNotificationAsync("Request Cancelled", 
-                    "The HTTP request was cancelled by the user.", 
-                    isSuccess: false);
+                    await ShowNotificationAsync("Request Cancelled", 
+                        "The HTTP request was cancelled by the user.", 
+                        isSuccess: false);
+                }
             }
             catch (Exception ex)
             {
-                await Dispatcher.InvokeAsync(() =>
+                // Only update UI if the control is still loaded and hasn't been disposed
+                if (!_isDisposing && IsLoaded)
                 {
-                    httpRequest.IsLoading = false;
-                    httpRequest.Response = $"Error: {ex.Message}\n\nRequest URL: {httpRequest.FullUrl}";
-                }, DispatcherPriority.Background);
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        httpRequest.IsLoading = false;
+                        httpRequest.Response = $"Error: {ex.Message}\n\nRequest URL: {httpRequest.FullUrl}";
+                    }, DispatcherPriority.Background);
 
-                await ShowNotificationAsync("Request Failed", 
-                    $"HTTP request failed: {ex.Message}", 
-                    isSuccess: false);
+                    await ShowNotificationAsync("Request Failed", 
+                        $"HTTP request failed: {ex.Message}", 
+                        isSuccess: false);
+                }
             }
         }
 

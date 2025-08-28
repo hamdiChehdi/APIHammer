@@ -72,6 +72,28 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         
         // Expand the first collection by default
         Loaded += (s, e) => ExpandFirstCollection();
+        
+        // Handle window closing to properly dispose of all tabs
+        Closing += MainWindow_Closing;
+    }
+
+    private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        // Dispose all tabs when the window is closing
+        foreach (var collection in TabCollections)
+        {
+            foreach (var tab in collection.Tabs)
+            {
+                if (tab.Content is HttpRequestView httpView)
+                {
+                    httpView.Dispose();
+                }
+                else if (tab.Content is WebSocketRequestView wsView)
+                {
+                    _ = wsView.DisposeAsync();
+                }
+            }
+        }
     }
 
     private void ExpandFirstCollection()
@@ -126,6 +148,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         
         if (result == MessageBoxResult.Yes)
         {
+            // Properly dispose all tabs in the collection
+            foreach (var tab in SelectedCollection.Tabs)
+            {
+                if (tab.Content is HttpRequestView httpView)
+                {
+                    httpView.Dispose();
+                }
+                else if (tab.Content is WebSocketRequestView wsView)
+                {
+                    _ = wsView.DisposeAsync();
+                }
+            }
+            
             TabCollections.Remove(SelectedCollection);
             SelectedCollection = TabCollections.FirstOrDefault();
             SelectedTab = null;
@@ -236,6 +271,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (sender is Button button && button.Tag is RequestTab tab && SelectedCollection != null)
         {
+            // Properly dispose the tab's content to clean up resources
+            if (tab.Content is HttpRequestView httpView)
+            {
+                httpView.Dispose();
+            }
+            else if (tab.Content is WebSocketRequestView wsView)
+            {
+                _ = wsView.DisposeAsync();
+            }
+            
             SelectedCollection.Tabs.Remove(tab);
             if (SelectedTab == tab)
             {
@@ -316,6 +361,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             var collection = TabCollections.FirstOrDefault(c => c.Tabs.Contains(tabToClose));
             if (collection != null)
             {
+                // Properly dispose the tab's content to clean up resources
+                if (tabToClose.Content is HttpRequestView httpView)
+                {
+                    httpView.Dispose();
+                }
+                else if (tabToClose.Content is WebSocketRequestView wsView)
+                {
+                    _ = wsView.DisposeAsync();
+                }
+                
                 collection.Tabs.Remove(tabToClose);
                 if (SelectedTab == tabToClose)
                 {
@@ -565,6 +620,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             
             if (result == MessageBoxResult.Yes)
             {
+                // Properly dispose all tabs in the collection
+                foreach (var tab in collection.Tabs)
+                {
+                    if (tab.Content is HttpRequestView httpView)
+                    {
+                        httpView.Dispose();
+                    }
+                    else if (tab.Content is WebSocketRequestView wsView)
+                    {
+                        _ = wsView.DisposeAsync();
+                    }
+                }
+                
                 TabCollections.Remove(collection);
                 if (SelectedCollection == collection)
                 {
