@@ -124,8 +124,8 @@ public class HttpRequestService
                 }
             }
 
-            // Send the request
-            response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            // Send the request - this is the main async operation
+            response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             stopwatch.Stop();
 
             // Build response headers
@@ -150,9 +150,9 @@ public class HttpRequestService
                 };
             }
 
-            // Read response content
-            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            var formattedContent = await FormatResponseContentAsync(responseContent, response);
+            // Read response content - ensure this doesn't block UI
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var formattedContent = await FormatResponseContentAsync(responseContent, response).ConfigureAwait(false);
 
             var fullResponse = responseHeaders + formattedContent;
 
@@ -240,7 +240,7 @@ public class HttpRequestService
 
     private string BuildResponseHeaders(HttpResponseMessage response, HttpRequestMessage request, HttpRequest httpRequest)
     {
-        var responseText = new StringBuilder(1024);
+        var responseText = new StringBuilder(512); // Reduce initial capacity to save memory
         responseText.AppendLine($"Status: {(int)response.StatusCode} {response.StatusCode}");
         responseText.AppendLine($"Request URL: {request.RequestUri}");
         
@@ -272,34 +272,31 @@ public class HttpRequestService
     private async Task<string> FormatResponseContentAsync(string content, HttpResponseMessage response)
     {
         const int largeResponseThreshold = 1024 * 1024; // 1MB
-        
+
         // Don't format very large responses to avoid memory issues
         if (content.Length > largeResponseThreshold)
         {
             return content;
         }
 
-        return await Task.Run(() =>
+        try
         {
-            try
+            if (response.Content.Headers.ContentType?.MediaType?.Contains("json") == true)
             {
-                if (response.Content.Headers.ContentType?.MediaType?.Contains("json") == true)
+                // Use System.Text.Json for formatting
+                using var document = JsonDocument.Parse(content);
+                var options = new JsonSerializerOptions
                 {
-                    // Use System.Text.Json for formatting
-                    using var document = JsonDocument.Parse(content);
-                    var options = new JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    };
-                    return JsonSerializer.Serialize(document, options);
-                }
+                    WriteIndented = true
+                };
+                return JsonSerializer.Serialize(document, options);
             }
-            catch
-            {
-                // Return original content if formatting fails
-            }
+        }
+        catch (JsonException)
+        {
+            // Return original content if formatting fails
+        }
 
-            return content;
-        });
+        return content;
     }
 }

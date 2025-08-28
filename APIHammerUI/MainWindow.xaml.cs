@@ -63,7 +63,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             RequestType = RequestType.HTTP
         };
         var httpRequest = new HttpRequest();
-        var httpView = new HttpRequestView { DataContext = httpRequest };
+        var httpView = new HttpRequestView();
+        // Set the HttpRequest as DataContext - the view will create its ViewModel
+        httpView.DataContext = httpRequest;
         sampleHttpTab.Content = httpView;
         defaultCollection.Tabs.Add(sampleHttpTab);
 
@@ -187,7 +189,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             case RequestType.HTTP:
                 var httpRequest = new HttpRequest();
-                var httpView = new HttpRequestView { DataContext = httpRequest };
+                var httpView = new HttpRequestView();
+                // Set the HttpRequest as DataContext - the view will create its ViewModel
+                httpView.DataContext = httpRequest;
                 tab.Content = httpView;
                 break;
 
