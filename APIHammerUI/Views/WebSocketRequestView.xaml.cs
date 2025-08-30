@@ -13,6 +13,7 @@ public partial class WebSocketRequestView : UserControl
 {
     private ClientWebSocket? webSocket;
     private CancellationTokenSource? cancellationTokenSource;
+    private bool _isDisposing = false;
 
     public WebSocketRequestView()
     {
@@ -110,18 +111,26 @@ public partial class WebSocketRequestView : UserControl
                 {
                     var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
                     
-                    Dispatcher.Invoke(() =>
+                    // Only update UI if the control hasn't been disposed
+                    if (!_isDisposing && IsLoaded)
                     {
-                        wsRequest.Messages += $"[{DateTime.Now:HH:mm:ss}] Received: {message}\n";
-                    });
+                        Dispatcher.Invoke(() =>
+                        {
+                            wsRequest.Messages += $"[{DateTime.Now:HH:mm:ss}] Received: {message}\n";
+                        });
+                    }
                 }
                 else if (result.MessageType == WebSocketMessageType.Close)
                 {
-                    Dispatcher.Invoke(() =>
+                    // Only update UI if the control hasn't been disposed
+                    if (!_isDisposing && IsLoaded)
                     {
-                        wsRequest.IsConnected = false;
-                        wsRequest.Messages += $"[{DateTime.Now:HH:mm:ss}] Connection closed by server\n";
-                    });
+                        Dispatcher.Invoke(() =>
+                        {
+                            wsRequest.IsConnected = false;
+                            wsRequest.Messages += $"[{DateTime.Now:HH:mm:ss}] Connection closed by server\n";
+                        });
+                    }
                     break;
                 }
             }
@@ -132,11 +141,15 @@ public partial class WebSocketRequestView : UserControl
         }
         catch (Exception ex)
         {
-            Dispatcher.Invoke(() =>
+            // Only update UI if the control hasn't been disposed
+            if (!_isDisposing && IsLoaded)
             {
-                wsRequest.Messages += $"[{DateTime.Now:HH:mm:ss}] Receive error: {ex.Message}\n";
-                wsRequest.IsConnected = false;
-            });
+                Dispatcher.Invoke(() =>
+                {
+                    wsRequest.Messages += $"[{DateTime.Now:HH:mm:ss}] Receive error: {ex.Message}\n";
+                    wsRequest.IsConnected = false;
+                });
+            }
         }
     }
 
@@ -162,9 +175,23 @@ public partial class WebSocketRequestView : UserControl
         }
     }
 
+    /// <summary>
+    /// Call this method when the tab is being permanently closed
+    /// </summary>
+    public async Task DisposeAsync()
+    {
+        _isDisposing = true;
+        if (DataContext is WebSocketRequest wsRequest && wsRequest.IsConnected)
+        {
+            await DisconnectWebSocket(wsRequest);
+        }
+    }
+
     private void UserControl_Unloaded(object sender, RoutedEventArgs e)
     {
-        if (DataContext is WebSocketRequest wsRequest && wsRequest.IsConnected)
+        // Only disconnect when permanently disposing, not when switching tabs
+        // This allows WebSocket connections to persist across tab switches
+        if (_isDisposing && DataContext is WebSocketRequest wsRequest && wsRequest.IsConnected)
         {
             _ = DisconnectWebSocket(wsRequest);
         }

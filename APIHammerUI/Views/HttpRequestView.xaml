@@ -4,9 +4,24 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:materialIcons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:behaviors="clr-namespace:APIHammerUI.Behaviors"
+             xmlns:converters="clr-namespace:APIHammerUI.Converters"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800"
-             Background="#3C3C3C">
+             Background="#3C3C3C"
+             Unloaded="HttpRequestView_Unloaded">
+
+    <UserControl.Resources>
+        <converters:CommandParameterConverter x:Key="CommandParameterConverter"/>
+    </UserControl.Resources>
+
+    <!-- Add keyboard shortcuts as InputBindings -->
+    <UserControl.InputBindings>
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.SaveAsTextCommand}"/>
+        <KeyBinding Key="J" Modifiers="Ctrl" Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.SaveAsJsonCommand}"/>
+        <KeyBinding Key="C" Modifiers="Ctrl" Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.CopyResponseCommand}"/>
+    </UserControl.InputBindings>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Margin="24">
@@ -42,7 +57,6 @@
                           ItemsSource="{Binding Methods}" 
                           SelectedItem="{Binding Method}"
                           Style="{StaticResource DarkComboBoxStyle}"
-                          
                           Margin="0,0,12,0"/>
 
                 <TextBox Grid.Column="1" 
@@ -52,21 +66,20 @@
                          FontFamily="Consolas"/>
 
                 <Button Grid.Column="2" 
-                        Click="PreviewButton_Click"
+                        Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.PreviewRequestCommand}"
                         Style="{StaticResource IconButtonStyle}"
                         Foreground="{StaticResource AccentBlue}"
                         Padding="12,8"
                         FontSize="12"
                         Margin="5,0,10,0"
                         ToolTip="Preview the complete HTTP request before sending">
-
                     <TextBlock Text="👁️" FontFamily="Segoe UI Emoji" FontSize="18" 
-                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
 
                 <Button Grid.Column="3" 
                         Content="{Binding IsLoading, Converter={StaticResource LoadingToButtonTextConverter}}" 
-                        Click="SendButton_Click"
+                        Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.SendRequestCommand}"
                         Style="{StaticResource SendButtonStyle}"/>
             </Grid>
 
@@ -109,16 +122,16 @@
                             <Setter.Value>
                                 <ControlTemplate TargetType="TabItem">
                                     <Border x:Name="Border"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            Padding="{TemplateBinding Padding}"
-                            CornerRadius="6,6,0,0"
-                            Margin="{TemplateBinding Margin}">
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            Padding="{TemplateBinding Padding}"
+                                            CornerRadius="6,6,0,0"
+                                            Margin="{TemplateBinding Margin}">
                                         <ContentPresenter x:Name="ContentSite"
-                                        VerticalAlignment="Center"
-                                        HorizontalAlignment="Center"
-                                        ContentSource="Header"/>
+                                                        VerticalAlignment="Center"
+                                                        HorizontalAlignment="Center"
+                                                        ContentSource="Header"/>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsSelected" Value="True">
@@ -136,6 +149,7 @@
                         </Setter>
                     </Style>
                 </TabControl.Resources>
+
                 <!-- Headers Tab with Suggestions -->
                 <TabItem Header="Headers">
                     <Grid>
@@ -160,7 +174,7 @@
                                     
                                     <Button Grid.Column="1"
                                             Content="+ Add Header"
-                                            Click="AddHeader_Click"
+                                            Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.AddHeaderCommand}"
                                             Style="{StaticResource IconButtonStyle}"
                                             Foreground="{StaticResource AccentBlue}"
                                             Padding="8,4"
@@ -172,12 +186,11 @@
                                               MaxHeight="300"
                                               Padding="16">
                                     <Border Background="{StaticResource DarkPanel}"
-                                        BorderBrush="{StaticResource DarkBorder}"
-                                        BorderThickness="1"
-                                        CornerRadius="4"
-                                        Padding="8">
+                                            BorderBrush="{StaticResource DarkBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="8">
                                         <StackPanel>
-                                            
                                             <!-- Headers Items -->
                                             <ItemsControl ItemsSource="{Binding Headers}">
                                                 <ItemsControl.ItemTemplate>
@@ -192,33 +205,39 @@
 
                                                             <!-- Enable/Disable Checkbox -->
                                                             <CheckBox Grid.Column="0"
-                                                                  IsChecked="{Binding IsEnabled}"
-                                                                  Style="{StaticResource DarkCheckBoxStyle}"
-                                                                  VerticalAlignment="Center"
-                                                                  Margin="0,0,8,0"/>
+                                                                      IsChecked="{Binding IsEnabled}"
+                                                                      Style="{StaticResource DarkCheckBoxStyle}"
+                                                                      VerticalAlignment="Center"
+                                                                      Margin="0,0,8,0"/>
 
                                                             <!-- Key TextBox -->
                                                             <TextBox Grid.Column="1"
-                                                                 Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
-                                                                 Style="{StaticResource DarkTextBoxStyle}"
-                                                                 Margin="0,0,8,0"
-                                                                 Tag="Key"
-                                                                 GotFocus="TextBox_GotFocus"/>
+                                                                     Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
+                                                                     Style="{StaticResource DarkTextBoxStyle}"
+                                                                     Margin="0,0,8,0"
+                                                                     Tag="Key">
+                                                                <i:Interaction.Behaviors>
+                                                                    <behaviors:GotFocusBehavior Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.HeaderFocusCommand}"/>
+                                                                </i:Interaction.Behaviors>
+                                                            </TextBox>
 
                                                             <!-- Value TextBox -->
                                                             <TextBox Grid.Column="2"
-                                                                 Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
-                                                                 Style="{StaticResource DarkTextBoxStyle}"
-                                                                 Margin="0,0,8,0"
-                                                                 Tag="Value"
-                                                                 GotFocus="TextBox_GotFocus"/>
+                                                                     Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                                                     Style="{StaticResource DarkTextBoxStyle}"
+                                                                     Margin="0,0,8,0"
+                                                                     Tag="Value">
+                                                                <i:Interaction.Behaviors>
+                                                                    <behaviors:GotFocusBehavior Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.HeaderFocusCommand}"/>
+                                                                </i:Interaction.Behaviors>
+                                                            </TextBox>
 
                                                             <!-- Delete Button -->
                                                             <Button Grid.Column="3"
-                                                                Content="X"
-                                                                Style="{StaticResource DeleteButtonStyle}"
-                                                                Click="DeleteHeader_Click"
-                                                                Tag="{Binding}"/>
+                                                                    Content="X"
+                                                                    Style="{StaticResource DeleteButtonStyle}"
+                                                                    Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.DeleteHeaderCommand}"
+                                                                    CommandParameter="{Binding}"/>
                                                         </Grid>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
@@ -252,52 +271,115 @@
                                     <!-- Content Headers -->
                                     <StackPanel Margin="0,0,0,16">
                                         <TextBlock Text="Content" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
-                                        <Button Content="Content-Type" Click="QuickAddHeader_Click" Tag="Content-Type" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="Content-Length" Click="QuickAddHeader_Click" Tag="Content-Length" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="Content-Encoding" Click="QuickAddHeader_Click" Tag="Content-Encoding" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="Content-Disposition" Click="QuickAddHeader_Click" Tag="Content-Disposition" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Content-Type" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Content-Type" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Content-Length" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Content-Length" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Content-Encoding" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Content-Encoding" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Content-Disposition" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Content-Disposition" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
                                     </StackPanel>
 
                                     <!-- Accept Headers -->
                                     <StackPanel Margin="0,0,0,16">
                                         <TextBlock Text="Accept" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
-                                        <Button Content="Accept" Click="QuickAddHeader_Click" Tag="Accept" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="Accept-Encoding" Click="QuickAddHeader_Click" Tag="Accept-Encoding" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="Accept-Language" Click="QuickAddHeader_Click" Tag="Accept-Language" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Accept" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Accept" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Accept-Encoding" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Accept-Encoding" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Accept-Language" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Accept-Language" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
                                     </StackPanel>
 
                                     <!-- Authentication Headers -->
                                     <StackPanel Margin="0,0,0,16">
                                         <TextBlock Text="Authentication" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
-                                        <Button Content="Authorization" Click="QuickAddHeader_Click" Tag="Authorization" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="WWW-Authenticate" Click="QuickAddHeader_Click" Tag="WWW-Authenticate" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Authorization" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Authorization" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="WWW-Authenticate" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="WWW-Authenticate" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
                                     </StackPanel>
 
                                     <!-- CORS Headers -->
                                     <StackPanel Margin="0,0,0,16">
                                         <TextBlock Text="CORS" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
-                                        <Button Content="Access-Control-Allow-Origin" Click="QuickAddHeader_Click" Tag="Access-Control-Allow-Origin" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="Access-Control-Allow-Methods" Click="QuickAddHeader_Click" Tag="Access-Control-Allow-Methods" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="Access-Control-Allow-Headers" Click="QuickAddHeader_Click" Tag="Access-Control-Allow-Headers" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="Origin" Click="QuickAddHeader_Click" Tag="Origin" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Access-Control-Allow-Origin" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Access-Control-Allow-Origin" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Access-Control-Allow-Methods" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Access-Control-Allow-Methods" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Access-Control-Allow-Headers" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Access-Control-Allow-Headers" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Origin" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Origin" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
                                     </StackPanel>
 
                                     <!-- Custom/API Headers -->
                                     <StackPanel Margin="0,0,0,16">
                                         <TextBlock Text="Custom/API" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
-                                        <Button Content="X-API-Key" Click="QuickAddHeader_Click" Tag="X-API-Key" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="X-Auth-Token" Click="QuickAddHeader_Click" Tag="X-Auth-Token" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="X-Requested-With" Click="QuickAddHeader_Click" Tag="X-Requested-With" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="X-Request-ID" Click="QuickAddHeader_Click" Tag="X-Request-ID" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="X-API-Key" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="X-API-Key" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="X-Auth-Token" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="X-Auth-Token" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="X-Requested-With" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="X-Requested-With" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="X-Request-ID" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="X-Request-ID" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
                                     </StackPanel>
 
                                     <!-- Caching Headers -->
                                     <StackPanel Margin="0,0,0,16">
                                         <TextBlock Text="Caching" FontWeight="Medium" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,8"/>
-                                        <Button Content="Cache-Control" Click="QuickAddHeader_Click" Tag="Cache-Control" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="ETag" Click="QuickAddHeader_Click" Tag="ETag" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="If-None-Match" Click="QuickAddHeader_Click" Tag="If-None-Match" Style="{StaticResource HeaderSuggestionStyle}"/>
-                                        <Button Content="Last-Modified" Click="QuickAddHeader_Click" Tag="Last-Modified" Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Cache-Control" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Cache-Control" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="ETag" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="ETag" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="If-None-Match" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="If-None-Match" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
+                                        <Button Content="Last-Modified" 
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QuickAddHeaderCommand}" 
+                                                CommandParameter="Last-Modified" 
+                                                Style="{StaticResource HeaderSuggestionStyle}"/>
                                     </StackPanel>
                                 </StackPanel>
                             </ScrollViewer>
@@ -370,14 +452,17 @@
                                             
                                             <PasswordBox Grid.Column="1"
                                                          x:Name="PasswordBox"
-                                                         PasswordChanged="PasswordBox_PasswordChanged"
                                                          Background="{StaticResource DarkPanel}"
                                                          Foreground="{StaticResource TextPrimary}"
                                                          BorderBrush="{StaticResource DarkBorder}"
                                                          BorderThickness="1"
                                                          Padding="8"
                                                          Height="32"
-                                                         FontSize="12"/>
+                                                         FontSize="12">
+                                                <i:Interaction.Behaviors>
+                                                    <behaviors:PasswordBoxPasswordChangedBehavior Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.PasswordChangedCommand}"/>
+                                                </i:Interaction.Behaviors>
+                                            </PasswordBox>
                                         </Grid>
                                     </StackPanel>
 
@@ -469,7 +554,7 @@
                                 
                                 <Button Grid.Column="1"
                                         Content="+ Add Parameter"
-                                        Click="AddQueryParameter_Click"
+                                        Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.AddQueryParameterCommand}"
                                         Style="{StaticResource IconButtonStyle}"
                                         Foreground="{StaticResource AccentBlue}"
                                         Padding="8,4"
@@ -532,23 +617,29 @@
                                                              Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}"
                                                              Style="{StaticResource DarkTextBoxStyle}"
                                                              Margin="0,0,8,0"
-                                                             Tag="Parameter"
-                                                             GotFocus="QueryParameter_GotFocus"/>
+                                                             Tag="Parameter">
+                                                        <i:Interaction.Behaviors>
+                                                            <behaviors:GotFocusBehavior Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QueryParameterFocusCommand}"/>
+                                                        </i:Interaction.Behaviors>
+                                                    </TextBox>
 
                                                     <!-- Value TextBox -->
                                                     <TextBox Grid.Column="2"
                                                              Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
                                                              Style="{StaticResource DarkTextBoxStyle}"
                                                              Margin="0,0,8,0"
-                                                             Tag="Value"
-                                                             GotFocus="QueryParameter_GotFocus"/>
+                                                             Tag="Value">
+                                                        <i:Interaction.Behaviors>
+                                                            <behaviors:GotFocusBehavior Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.QueryParameterFocusCommand}"/>
+                                                        </i:Interaction.Behaviors>
+                                                    </TextBox>
 
                                                     <!-- Delete Button -->
                                                     <Button Grid.Column="3"
                                                             Content="X"
                                                             Style="{StaticResource DeleteButtonStyle}"
-                                                            Click="DeleteQueryParameter_Click"
-                                                            Tag="{Binding}"/>
+                                                            Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.DeleteQueryParameterCommand}"
+                                                            CommandParameter="{Binding}"/>
                                                 </Grid>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -591,11 +682,11 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0"
-               Text="Response" 
-               FontSize="14" 
-               FontWeight="Medium" 
-               VerticalAlignment="Center"
-               Foreground="{StaticResource TextPrimary}"/>
+                           Text="Response" 
+                           FontSize="14" 
+                           FontWeight="Medium" 
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextPrimary}"/>
 
                 <!-- Save Response Buttons -->
                 <StackPanel Grid.Column="1" 
@@ -604,8 +695,7 @@
                            VerticalAlignment="Center"
                            Margin="0,0,12,0">
 
-                    <Button 
-                            Click="SaveAsJson_Click"
+                    <Button Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.SaveAsJsonCommand}"
                             Style="{StaticResource IconButtonStyle}"
                             Foreground="{StaticResource AccentBlue}"
                             Padding="8,4"
@@ -616,8 +706,7 @@
                         <materialIcons:MaterialIcon Kind="CodeJson" Height="30" />
                     </Button>
 
-                    <Button 
-                            Click="SaveAsText_Click"
+                    <Button Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.SaveAsTextCommand}"
                             Style="{StaticResource IconButtonStyle}"
                             Foreground="{StaticResource AccentBlue}"
                             Padding="8,4"
@@ -630,72 +719,72 @@
 
                 <!-- Response Metadata -->
                 <StackPanel Grid.Column="2" 
-               Orientation="Horizontal"
-               VerticalAlignment="Center">
+                           Orientation="Horizontal"
+                           VerticalAlignment="Center">
 
                     <!-- Response Time -->
                     <Border Background="{StaticResource DarkCard}"
-                BorderBrush="{StaticResource DarkBorder}"
-                BorderThickness="1"
-                CornerRadius="3"
-                Padding="8,4"
-                Margin="0,0,8,0">
+                            BorderBrush="{StaticResource DarkBorder}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="8,4"
+                            Margin="0,0,8,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Time"
-                           FontSize="10"
-                           FontWeight="Bold"
-                           Margin="0,0,4,0"
-                           VerticalAlignment="Center"
-                           Foreground="{StaticResource TextMuted}"/>
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       Margin="0,0,4,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextMuted}"/>
                             <TextBlock Text="{Binding ResponseTimeFormatted, Mode=OneWay}"
-                           FontSize="11"
-                           FontWeight="Medium"
-                           Foreground="{StaticResource AccentBlue}"
-                           VerticalAlignment="Center"/>
+                                       FontSize="11"
+                                       FontWeight="Medium"
+                                       Foreground="{StaticResource AccentBlue}"
+                                       VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Response Size -->
                     <Border Background="{StaticResource DarkCard}"
-                BorderBrush="{StaticResource DarkBorder}"
-                BorderThickness="1"
-                CornerRadius="3"
-                Padding="8,4"
-                Margin="0,0,8,0">
+                            BorderBrush="{StaticResource DarkBorder}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="8,4"
+                            Margin="0,0,8,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Size"
-                           FontSize="10"
-                           FontWeight="Bold"
-                           Margin="0,0,4,0"
-                           VerticalAlignment="Center"
-                           Foreground="{StaticResource TextMuted}"/>
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       Margin="0,0,4,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextMuted}"/>
                             <TextBlock Text="{Binding ResponseSizeFormatted, Mode=OneWay}"
-                           FontSize="11"
-                           FontWeight="Medium"
-                           Foreground="{StaticResource SuccessGreen}"
-                           VerticalAlignment="Center"/>
+                                       FontSize="11"
+                                       FontWeight="Medium"
+                                       Foreground="{StaticResource SuccessGreen}"
+                                       VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Request DateTime -->
                     <Border Background="{StaticResource DarkCard}"
-                BorderBrush="{StaticResource DarkBorder}"
-                BorderThickness="1"
-                CornerRadius="3"
-                Padding="8,4"
-                Margin="0,0,8,0">
+                            BorderBrush="{StaticResource DarkBorder}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="8,4"
+                            Margin="0,0,8,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Sent"
-                           FontSize="10"
-                           FontWeight="Bold"
-                           Margin="0,0,4,0"
-                           VerticalAlignment="Center"
-                           Foreground="{StaticResource TextMuted}"/>
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       Margin="0,0,4,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextMuted}"/>
                             <TextBlock Text="{Binding RequestDateTimeFormatted, Mode=OneWay}"
-                           FontSize="11"
-                           FontWeight="Medium"
-                           Foreground="{StaticResource TextSecondary}"
-                           VerticalAlignment="Center"/>
+                                       FontSize="11"
+                                       FontWeight="Medium"
+                                       Foreground="{StaticResource TextSecondary}"
+                                       VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -712,18 +801,37 @@
                               HorizontalScrollBarVisibility="Auto"
                               VirtualizingPanel.IsVirtualizing="True"
                               VirtualizingPanel.VirtualizationMode="Recycling">
-                    <ItemsControl ItemsSource="{Binding ResponseChunks}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <VirtualizingStackPanel IsItemsHost="True"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <TextBox Text="{Binding Response}"
+                             IsReadOnly="True"
+                             Background="Transparent"
+                             Foreground="{StaticResource TextSecondary}"
+                             BorderThickness="0"
+                             TextWrapping="Wrap"
+                             Padding="12"
+                             FontFamily="Consolas"
+                             FontSize="12"
+                             VirtualizingPanel.IsVirtualizing="True">
+                        <TextBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Copy Response" Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.CopyResponseCommand}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="📋" FontFamily="Segoe UI Emoji"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <Separator/>
+                                <MenuItem Header="Save as JSON..." Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.SaveAsJsonCommand}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="💾" FontFamily="Segoe UI Emoji"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="Save as Text..." Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.SaveAsTextCommand}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="📄" FontFamily="Segoe UI Emoji"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </TextBox.ContextMenu>
+                    </TextBox>
                 </ScrollViewer>
             </Border>
         </Grid>

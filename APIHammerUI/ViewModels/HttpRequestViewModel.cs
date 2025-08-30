@@ -2,28 +2,53 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using Microsoft.Win32;
 using APIHammerUI.Models;
 using APIHammerUI.Services;
-using APIHammerUI.Commands;
-using APIHammerUI.Messages;
-using System.Text;
-using System.Linq;
+using Microsoft.Win32;
 
 namespace APIHammerUI.ViewModels;
 
-public class HttpRequestViewModel : INotifyPropertyChanged
+public class HttpRequestViewModel : INotifyPropertyChanged, IDisposable
 {
+    private readonly HttpRequestService _httpRequestService;
     private CancellationTokenSource? _currentRequestCancellation;
-    
+    private bool _isDisposing = false;
+
     public HttpRequest HttpRequest { get; }
-    
-    // Commands
+
+    public HttpRequestViewModel(HttpRequest httpRequest)
+    {
+        HttpRequest = httpRequest ?? throw new ArgumentNullException(nameof(httpRequest));
+        _httpRequestService = new HttpRequestService();
+
+        // Initialize commands - Use regular RelayCommand for send since it's fire-and-forget
+        SendRequestCommand = new AsyncRelayCommand(ExecuteSendRequestAsync, () => !_isDisposing);
+        PreviewRequestCommand = new RelayCommand(ExecutePreviewRequest, () => !_isDisposing);
+        AddHeaderCommand = new RelayCommand(ExecuteAddHeader, () => !_isDisposing);
+        DeleteHeaderCommand = new RelayCommand<HttpHeaderItem>(ExecuteDeleteHeader, _ => !_isDisposing);
+        AddQueryParameterCommand = new RelayCommand(ExecuteAddQueryParameter, () => !_isDisposing);
+        DeleteQueryParameterCommand = new RelayCommand<HttpQueryParameter>(ExecuteDeleteQueryParameter, _ => !_isDisposing);
+        QuickAddHeaderCommand = new RelayCommand<string>(ExecuteQuickAddHeader, _ => !_isDisposing);
+        SaveAsJsonCommand = new AsyncRelayCommand(ExecuteSaveAsJsonAsync, () => !_isDisposing && HasResponse);
+        SaveAsTextCommand = new AsyncRelayCommand(ExecuteSaveAsTextAsync, () => !_isDisposing && HasResponse);
+        CopyResponseCommand = new RelayCommand(ExecuteCopyResponse, () => !_isDisposing && HasResponse);
+        HeaderFocusCommand = new RelayCommand(ExecuteHeaderFocus, () => !_isDisposing);
+        QueryParameterFocusCommand = new RelayCommand(ExecuteQueryParameterFocus, () => !_isDisposing);
+        PasswordChangedCommand = new RelayCommand<string>(ExecutePasswordChanged, _ => !_isDisposing);
+
+        // Subscribe to property changes to update command states
+        HttpRequest.PropertyChanged += OnHttpRequestPropertyChanged;
+    }
+
+    #region Commands
+
     public ICommand SendRequestCommand { get; }
     public ICommand PreviewRequestCommand { get; }
     public ICommand AddHeaderCommand { get; }
@@ -34,95 +59,94 @@ public class HttpRequestViewModel : INotifyPropertyChanged
     public ICommand SaveAsJsonCommand { get; }
     public ICommand SaveAsTextCommand { get; }
     public ICommand CopyResponseCommand { get; }
+    public ICommand HeaderFocusCommand { get; }
+    public ICommand QueryParameterFocusCommand { get; }
+    public ICommand PasswordChangedCommand { get; }
 
-    public HttpRequestViewModel() : this(new HttpRequest())
+    #endregion
+
+    #region Properties
+
+    public bool HasResponse => !string.IsNullOrWhiteSpace(HttpRequest.Response);
+
+    #endregion
+
+    #region Command Implementations
+
+    private async Task ExecuteSendRequestAsync()
     {
-    }
-
-    public HttpRequestViewModel(HttpRequest httpRequest)
-    {
-        HttpRequest = httpRequest ?? throw new ArgumentNullException(nameof(httpRequest));
-
-        // Initialize commands
-        SendRequestCommand = new RelayCommand(ExecuteSendRequest, () => !HttpRequest.IsLoading);
-        PreviewRequestCommand = new RelayCommand(ExecutePreviewRequest);
-        AddHeaderCommand = new RelayCommand(ExecuteAddHeader);
-        DeleteHeaderCommand = new RelayCommand<HttpHeaderItem>(ExecuteDeleteHeader, CanDeleteHeader);
-        AddQueryParameterCommand = new RelayCommand(ExecuteAddQueryParameter);
-        DeleteQueryParameterCommand = new RelayCommand<HttpQueryParameter>(ExecuteDeleteQueryParameter, CanDeleteQueryParameter);
-        QuickAddHeaderCommand = new RelayCommand<string>(ExecuteQuickAddHeader);
-        SaveAsJsonCommand = new RelayCommand(ExecuteSaveAsJson, () => !string.IsNullOrWhiteSpace(HttpRequest.Response));
-        SaveAsTextCommand = new RelayCommand(ExecuteSaveAsText, () => !string.IsNullOrWhiteSpace(HttpRequest.Response));
-        CopyResponseCommand = new RelayCommand(ExecuteCopyResponse, () => !string.IsNullOrWhiteSpace(HttpRequest.Response));
-
-        // Subscribe to property changes to update command states
-        HttpRequest.PropertyChanged += OnHttpRequestPropertyChanged;
-    }
-
-    private void OnHttpRequestPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(HttpRequest.IsLoading))
+        // If currently loading, cancel the request
+        if (HttpRequest.IsLoading)
         {
-            (SendRequestCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            _currentRequestCancellation?.Cancel();
+            HttpRequest.IsLoading = false;
+            HttpRequest.Response = "Request cancelled by user.";
+            return;
         }
-        else if (e.PropertyName == nameof(HttpRequest.Response))
-        {
-            (SaveAsJsonCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (SaveAsTextCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (CopyResponseCommand as RelayCommand)?.RaiseCanExecuteChanged();
-        }
-    }
 
-    private void ExecuteSendRequest()
-    {
+        // Cancel any existing request for this tab
+        _currentRequestCancellation?.Cancel();
+        _currentRequestCancellation = new CancellationTokenSource();
+
         try
         {
-            // If currently loading, cancel the request
-            if (HttpRequest.IsLoading)
+            // Update UI immediately to show loading state
+            await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                _currentRequestCancellation?.Cancel();
-                HttpRequest.IsLoading = false;
-                HttpRequest.Response = "Request cancelled by user.";
-                return;
-            }
+                HttpRequest.IsLoading = true;
+                HttpRequest.Response = "Sending request...";
+            }, System.Windows.Threading.DispatcherPriority.Background);
 
-            // Cancel any existing request
-            _currentRequestCancellation?.Cancel();
-            _currentRequestCancellation = new CancellationTokenSource();
-
-            // Set loading state immediately on UI thread
-            HttpRequest.IsLoading = true;
-            HttpRequest.Response = "Queuing request...";
-
-            // Create and queue the HTTP request message
-            var requestMessage = new APIHammerUI.Messages.HttpRequestMessage
+            // Perform the HTTP request on a background thread
+            var result = await Task.Run(async () =>
             {
-                Request = HttpRequest,
-                CancellationToken = _currentRequestCancellation.Token,
-                Priority = 0 // Normal priority
-            };
-
-            // Queue the request for processing
-            ApplicationServiceManager.Instance.MessageQueue.QueueHttpRequest(requestMessage);
-
-            // Update UI to show request is queued
-            ApplicationServiceManager.Instance.MessageQueue.QueueUiUpdate(new UiUpdateMessage
-            {
-                Priority = 100, // High priority for immediate UI feedback
-                Description = "Update request status to processing",
-                UiAction = () =>
-                {
-                    HttpRequest.Response = "Processing request...";
-                }
+                return await _httpRequestService.SendRequestAsync(HttpRequest, _currentRequestCancellation.Token);
             });
+
+            // Check if cancellation was requested before updating UI
+            if (_currentRequestCancellation.Token.IsCancellationRequested)
+                return;
+
+            // Update UI with results
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                HttpRequest.IsLoading = false;
+                HttpRequest.Response = result.Response;
+                HttpRequest.ResponseTime = result.ResponseTime;
+                HttpRequest.ResponseSize = result.ResponseSize;
+                HttpRequest.RequestDateTime = result.RequestDateTime;
+            }, System.Windows.Threading.DispatcherPriority.Background);
+
+            // Show notification only if not cancelled
+            if (!_currentRequestCancellation.Token.IsCancellationRequested)
+            {
+                var title = result.Success ? "Request Completed" : "Request Failed";
+                var message = result.Success 
+                    ? $"HTTP {HttpRequest.Method} request completed successfully\n" +
+                      $"Time: {HttpRequest.ResponseTimeFormatted}\n" +
+                      $"Size: {HttpRequest.ResponseSizeFormatted}"
+                    : $"HTTP request failed: {result.ErrorMessage}";
+
+                await ShowNotificationAsync(title, message, result.Success);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Handle cancellation
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                HttpRequest.IsLoading = false;
+                HttpRequest.Response = "Request was cancelled.";
+            }, System.Windows.Threading.DispatcherPriority.Background);
         }
         catch (Exception ex)
         {
-            HttpRequest.IsLoading = false;
-            HttpRequest.Response = $"Error queuing request: {ex.Message}";
-            
-            MessageBox.Show($"Error sending request: {ex.Message}", "Error", 
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            // Handle other exceptions
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                HttpRequest.IsLoading = false;
+                HttpRequest.Response = $"Error: {ex.Message}\n\nRequest URL: {HttpRequest.FullUrl}";
+            }, System.Windows.Threading.DispatcherPriority.Background);
         }
     }
 
@@ -150,15 +174,10 @@ public class HttpRequestViewModel : INotifyPropertyChanged
 
     private void ExecuteDeleteHeader(HttpHeaderItem? headerItem)
     {
-        if (headerItem != null && CanDeleteHeader(headerItem))
+        if (headerItem != null && HttpRequest.Headers.Count > 1)
         {
             HttpRequest.Headers.Remove(headerItem);
         }
-    }
-
-    private bool CanDeleteHeader(HttpHeaderItem? headerItem)
-    {
-        return headerItem != null && HttpRequest.Headers.Count > 1;
     }
 
     private void ExecuteAddQueryParameter()
@@ -168,20 +187,16 @@ public class HttpRequestViewModel : INotifyPropertyChanged
 
     private void ExecuteDeleteQueryParameter(HttpQueryParameter? queryParam)
     {
-        if (queryParam != null && CanDeleteQueryParameter(queryParam))
+        if (queryParam != null && HttpRequest.QueryParameters.Count > 1)
         {
             HttpRequest.QueryParameters.Remove(queryParam);
         }
     }
 
-    private bool CanDeleteQueryParameter(HttpQueryParameter? queryParam)
-    {
-        return queryParam != null && HttpRequest.QueryParameters.Count > 1;
-    }
-
     private void ExecuteQuickAddHeader(string? headerName)
     {
-        if (string.IsNullOrEmpty(headerName)) return;
+        if (string.IsNullOrWhiteSpace(headerName))
+            return;
 
         // Check if header already exists
         var existingHeader = HttpRequest.Headers.FirstOrDefault(h => 
@@ -229,9 +244,10 @@ public class HttpRequestViewModel : INotifyPropertyChanged
         }
     }
 
-    private void ExecuteSaveAsJson()
+    private async Task ExecuteSaveAsJsonAsync()
     {
-        if (string.IsNullOrWhiteSpace(HttpRequest.Response)) return;
+        if (string.IsNullOrWhiteSpace(HttpRequest.Response))
+            return;
 
         try
         {
@@ -251,20 +267,23 @@ public class HttpRequestViewModel : INotifyPropertyChanged
             try
             {
                 using var document = JsonDocument.Parse(jsonContent);
-                var options = new JsonSerializerOptions { WriteIndented = true };
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                };
                 formattedJson = JsonSerializer.Serialize(document, options);
             }
             catch (JsonException)
             {
                 isValidJson = false;
-                // If it's not valid JSON, save as-is but warn the user
                 var result = MessageBox.Show(
                     "The response body doesn't appear to be valid JSON. Save as plain text instead?", 
                     "Invalid JSON", 
                     MessageBoxButton.YesNo, 
                     MessageBoxImage.Question);
                 
-                if (result != MessageBoxResult.Yes) return;
+                if (result != MessageBoxResult.Yes)
+                    return;
                 
                 formattedJson = jsonContent;
             }
@@ -285,7 +304,7 @@ public class HttpRequestViewModel : INotifyPropertyChanged
 
             if (saveDialog.ShowDialog() == true)
             {
-                File.WriteAllText(saveDialog.FileName, formattedJson, Encoding.UTF8);
+                await File.WriteAllTextAsync(saveDialog.FileName, formattedJson, Encoding.UTF8);
                 
                 var fileInfo = new FileInfo(saveDialog.FileName);
                 var sizeInfo = fileInfo.Length < 1024 ? 
@@ -296,6 +315,16 @@ public class HttpRequestViewModel : INotifyPropertyChanged
                     "Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
+        catch (UnauthorizedAccessException)
+        {
+            MessageBox.Show("Access denied. Please choose a different location or run as administrator.", 
+                "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        catch (DirectoryNotFoundException)
+        {
+            MessageBox.Show("The specified directory does not exist.", 
+                "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
         catch (Exception ex)
         {
             MessageBox.Show($"Error saving file: {ex.Message}", "Save Error", 
@@ -303,9 +332,10 @@ public class HttpRequestViewModel : INotifyPropertyChanged
         }
     }
 
-    private void ExecuteSaveAsText()
+    private async Task ExecuteSaveAsTextAsync()
     {
-        if (string.IsNullOrWhiteSpace(HttpRequest.Response)) return;
+        if (string.IsNullOrWhiteSpace(HttpRequest.Response))
+            return;
 
         try
         {
@@ -320,7 +350,7 @@ public class HttpRequestViewModel : INotifyPropertyChanged
             if (saveDialog.ShowDialog() == true)
             {
                 var fullResponse = BuildFullResponseForSave();
-                File.WriteAllText(saveDialog.FileName, fullResponse, Encoding.UTF8);
+                await File.WriteAllTextAsync(saveDialog.FileName, fullResponse, Encoding.UTF8);
                 
                 var fileInfo = new FileInfo(saveDialog.FileName);
                 var sizeInfo = fileInfo.Length < 1024 ? 
@@ -333,6 +363,16 @@ public class HttpRequestViewModel : INotifyPropertyChanged
                     "Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
+        catch (UnauthorizedAccessException)
+        {
+            MessageBox.Show("Access denied. Please choose a different location or run as administrator.", 
+                "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        catch (DirectoryNotFoundException)
+        {
+            MessageBox.Show("The specified directory does not exist.", 
+                "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
         catch (Exception ex)
         {
             MessageBox.Show($"Error saving file: {ex.Message}", "Save Error", 
@@ -342,7 +382,8 @@ public class HttpRequestViewModel : INotifyPropertyChanged
 
     private void ExecuteCopyResponse()
     {
-        if (string.IsNullOrWhiteSpace(HttpRequest.Response)) return;
+        if (string.IsNullOrWhiteSpace(HttpRequest.Response))
+            return;
 
         try
         {
@@ -356,6 +397,38 @@ public class HttpRequestViewModel : INotifyPropertyChanged
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
+    private void ExecuteHeaderFocus()
+    {
+        // Auto-add a new header row when user focuses on the last empty row
+        var lastHeader = HttpRequest.Headers.LastOrDefault();
+        if (lastHeader != null && !string.IsNullOrWhiteSpace(lastHeader.Key) && !string.IsNullOrWhiteSpace(lastHeader.Value))
+        {
+            HttpRequest.Headers.Add(new HttpHeaderItem { Key = "", Value = "", IsEnabled = true });
+        }
+    }
+
+    private void ExecuteQueryParameterFocus()
+    {
+        // Auto-add a new query parameter row when user focuses on the last empty row
+        var lastParam = HttpRequest.QueryParameters.LastOrDefault();
+        if (lastParam != null && !string.IsNullOrWhiteSpace(lastParam.Key) && !string.IsNullOrWhiteSpace(lastParam.Value))
+        {
+            HttpRequest.QueryParameters.Add(new HttpQueryParameter { Key = "", Value = "", IsEnabled = true });
+        }
+    }
+
+    private void ExecutePasswordChanged(string? password)
+    {
+        if (password != null)
+        {
+            HttpRequest.Authentication.Password = password;
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods
 
     private string GetDefaultValueForHeader(string headerName)
     {
@@ -387,7 +460,8 @@ public class HttpRequestViewModel : INotifyPropertyChanged
         const string bodyMarker = "Response Body:";
         var bodyIndex = fullResponse.IndexOf(bodyMarker, StringComparison.OrdinalIgnoreCase);
         
-        if (bodyIndex == -1) return string.Empty;
+        if (bodyIndex == -1)
+            return string.Empty;
 
         var startIndex = bodyIndex + bodyMarker.Length;
         var responseBody = fullResponse.Substring(startIndex).Trim();
@@ -497,6 +571,8 @@ public class HttpRequestViewModel : INotifyPropertyChanged
         fullResponse.AppendLine("=".PadRight(80, '='));
         fullResponse.AppendLine("HTTP RESPONSE");
         fullResponse.AppendLine("=".PadRight(80, '='));
+        
+        // Add the actual response
         fullResponse.AppendLine(HttpRequest.Response);
 
         // Add footer
@@ -514,43 +590,56 @@ public class HttpRequestViewModel : INotifyPropertyChanged
         return $"{prefix}_{timestamp}{extension}";
     }
 
-    private void ShowNotification(string title, string message, bool isSuccess)
+    private async Task ShowNotificationAsync(string title, string message, bool isSuccess)
     {
-        // For now, just log to debug - could be enhanced with toast notifications
-        System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss}] {title}: {message}");
-    }
-
-    public void HandlePasswordChanged(string password)
-    {
-        HttpRequest.Authentication.Password = password;
-    }
-
-    public void HandleFocusedHeaderRow()
-    {
-        // Auto-add a new empty header row when user focuses on the last empty row
-        var lastHeader = HttpRequest.Headers.LastOrDefault();
-        if (lastHeader != null && !string.IsNullOrWhiteSpace(lastHeader.Key) && !string.IsNullOrWhiteSpace(lastHeader.Value))
+        await Application.Current.Dispatcher.InvokeAsync(() =>
         {
-            HttpRequest.Headers.Add(new HttpHeaderItem { Key = "", Value = "", IsEnabled = true });
+            // Simple non-blocking notification by prepending to the response
+            var timestampedNotification = $"[{DateTime.Now:HH:mm:ss}] {title}: {message}\n\n";
+            
+            // Prepend notification to the existing response without excessive string operations
+            var currentResponse = HttpRequest.Response ?? "";
+            if (currentResponse.Length < 1000) // Only prepend for small responses to avoid memory issues
+            {
+                HttpRequest.Response = timestampedNotification + currentResponse;
+            }
+            
+            // Also log to debug output for development
+            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss}] {title}: {message}");
+        });
+    }
+
+    #endregion
+
+    #region Event Handlers
+
+    private void OnHttpRequestPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(HttpRequest.Response))
+        {
+            OnPropertyChanged(nameof(HasResponse));
         }
     }
 
-    public void HandleFocusedQueryParameterRow()
-    {
-        // Auto-add a new empty query parameter row when user focuses on the last empty row
-        var lastParam = HttpRequest.QueryParameters.LastOrDefault();
-        if (lastParam != null && !string.IsNullOrWhiteSpace(lastParam.Key) && !string.IsNullOrWhiteSpace(lastParam.Value))
-        {
-            HttpRequest.QueryParameters.Add(new HttpQueryParameter { Key = "", Value = "", IsEnabled = true });
-        }
-    }
+    #endregion
 
-    public void Cleanup()
+    #region IDisposable
+
+    public void Dispose()
     {
+        _isDisposing = true;
         _currentRequestCancellation?.Cancel();
         _currentRequestCancellation?.Dispose();
-        HttpRequest.PropertyChanged -= OnHttpRequestPropertyChanged;
+        
+        if (HttpRequest != null)
+        {
+            HttpRequest.PropertyChanged -= OnHttpRequestPropertyChanged;
+        }
     }
+
+    #endregion
+
+    #region INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -558,4 +647,6 @@ public class HttpRequestViewModel : INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
+
+    #endregion
 }

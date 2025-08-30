@@ -17,6 +17,7 @@ public partial class BatchRequestProgressDialog : Window, INotifyPropertyChanged
     private readonly DispatcherTimer _elapsedTimer;
     private DateTime _startTime;
     private BatchRequestResult? _result;
+    private bool _operationCompleted = false;
 
     private string _collectionName = "";
     public string CollectionName
@@ -76,11 +77,13 @@ public partial class BatchRequestProgressDialog : Window, INotifyPropertyChanged
 
             // Operation completed
             _elapsedTimer.Stop();
+            _operationCompleted = true;
             OnBatchCompleted(_result);
         }
         catch (Exception ex)
         {
             _elapsedTimer.Stop();
+            _operationCompleted = true;
             OnBatchError(ex);
         }
     }
@@ -173,8 +176,8 @@ public partial class BatchRequestProgressDialog : Window, INotifyPropertyChanged
 
     protected override void OnClosing(CancelEventArgs e)
     {
-        // If operation is still running, ask for confirmation
-        if (_cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested)
+        // Only show confirmation if operation is still running (not completed and not cancelled)
+        if (!_operationCompleted && _cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested)
         {
             var result = MessageBox.Show(
                 "Batch operation is still running. Do you want to cancel it and close?",
