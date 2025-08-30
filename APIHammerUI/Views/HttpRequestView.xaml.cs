@@ -11,32 +11,14 @@ using System.IO;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using System.Text.Json;
+using APIHammerUI.Services;
+using APIHammerUI.Messages;
 
 namespace APIHammerUI.Views
 {
     public partial class HttpRequestView : UserControl
     {
-        private static readonly HttpClient httpClient = new HttpClient()
-        {
-            MaxResponseContentBufferSize = MAX_RESPONSE_SIZE,
-            Timeout = TimeSpan.FromMinutes(5) // 5 minute timeout
-        };
         private CancellationTokenSource? _currentRequestCancellation;
-        private DispatcherTimer? _uiUpdateTimer;
-        private volatile string? _currentResponseContent;
-        private volatile bool _isStreamingComplete;
-
-        // Memory management constants
-        private const int MAX_RESPONSE_SIZE = 10 * 1024 * 1024; // 10MB limit
-        private const int BUFFER_SIZE = 16384; // 16KB buffer
-        private const int UI_UPDATE_INTERVAL_MS = 1000; // Update UI every 1 second
-        private const int LARGE_RESPONSE_THRESHOLD = 1024 * 1024; // 1MB threshold
-
-        static HttpRequestView()
-        {
-            // Configure HttpClient for better performance
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "APIHammer/1.0");
-        }
 
         public HttpRequestView()
         {
@@ -53,7 +35,6 @@ namespace APIHammerUI.Views
         {
             // Cleanup when control is unloaded
             _currentRequestCancellation?.Cancel();
-            _uiUpdateTimer?.Stop();
         }
 
         private void HttpRequestView_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -260,306 +241,55 @@ namespace APIHammerUI.Views
             if (DataContext is not HttpRequest httpRequest)
                 return;
 
-            // If currently loading, cancel the request
-            if (httpRequest.IsLoading)
-            {
-                _currentRequestCancellation?.Cancel();
-                _uiUpdateTimer?.Stop();
-                httpRequest.IsLoading = false;
-                httpRequest.Response = "Request cancelled by user.";
-                return;
-            }
-
-            // Cancel any existing request
-            _currentRequestCancellation?.Cancel();
-            _uiUpdateTimer?.Stop();
-            _currentRequestCancellation = new CancellationTokenSource();
-
-            // Start the request using the HttpRequestService
-            _ = Task.Run(async () => await SendHttpRequestWithServiceAsync(httpRequest, _currentRequestCancellation.Token));
-        }
-
-        private async Task SendHttpRequestWithServiceAsync(HttpRequest httpRequest, CancellationToken cancellationToken)
-        {
             try
             {
-                // Update UI on the UI thread
-                await Dispatcher.InvokeAsync(() =>
+                // If currently loading, cancel the request
+                if (httpRequest.IsLoading)
                 {
-                    httpRequest.IsLoading = true;
-                    httpRequest.Response = "Sending request...";
-                }, DispatcherPriority.Background);
-
-                // Use the HttpRequestService
-                var httpRequestService = new APIHammerUI.Services.HttpRequestService();
-                var result = await httpRequestService.SendRequestAsync(httpRequest, cancellationToken);
-
-                // Update UI with results
-                await Dispatcher.InvokeAsync(() =>
-                {
+                    _currentRequestCancellation?.Cancel();
                     httpRequest.IsLoading = false;
-                    httpRequest.Response = result.Response;
-                    httpRequest.ResponseTime = result.ResponseTime;
-                    httpRequest.ResponseSize = result.ResponseSize;
-                    httpRequest.RequestDateTime = result.RequestDateTime;
-                }, DispatcherPriority.Background);
-
-                // Show notification
-                var title = result.Success ? "Request Completed" : "Request Failed";
-                var message = result.Success 
-                    ? $"HTTP {httpRequest.Method} request completed successfully\n" +
-                      $"Time: {httpRequest.ResponseTimeFormatted}\n" +
-                      $"Size: {httpRequest.ResponseSizeFormatted}"
-                    : $"HTTP request failed: {result.ErrorMessage}";
-
-                await ShowNotificationAsync(title, message, result.Success);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    httpRequest.IsLoading = false;
-                    httpRequest.Response = "Request was cancelled.";
-                }, DispatcherPriority.Background);
-
-                await ShowNotificationAsync("Request Cancelled", 
-                    "The HTTP request was cancelled by the user.", 
-                    isSuccess: false);
-            }
-            catch (Exception ex)
-            {
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    httpRequest.IsLoading = false;
-                    httpRequest.Response = $"Error: {ex.Message}\n\nRequest URL: {httpRequest.FullUrl}";
-                }, DispatcherPriority.Background);
-
-                await ShowNotificationAsync("Request Failed", 
-                    $"HTTP request failed: {ex.Message}", 
-                    isSuccess: false);
-            }
-        }
-
-        private void StartProgressTimer(HttpRequest httpRequest, string responseHeaders)
-        {
-            _uiUpdateTimer?.Stop();
-            _uiUpdateTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(UI_UPDATE_INTERVAL_MS)
-            };
-
-            _uiUpdateTimer.Tick += (s, e) =>
-            {
-                if (_isStreamingComplete)
-                {
-                    _uiUpdateTimer.Stop();
+                    httpRequest.Response = "Request cancelled by user.";
                     return;
                 }
 
-                var currentContent = _currentResponseContent;
-                if (currentContent != null)
+                // Cancel any existing request
+                _currentRequestCancellation?.Cancel();
+                _currentRequestCancellation = new CancellationTokenSource();
+
+                // Set loading state immediately on UI thread
+                httpRequest.IsLoading = true;
+                httpRequest.Response = "Queuing request...";
+
+                // Create and queue the HTTP request message
+                var requestMessage = new APIHammerUI.Messages.HttpRequestMessage
                 {
-                    var progressInfo = $"\n\nStreaming... ({Encoding.UTF8.GetByteCount(currentContent) / 1024:F1} KB received)";
-                    httpRequest.Response = responseHeaders + currentContent + progressInfo;
-                }
-            };
+                    Request = httpRequest,
+                    CancellationToken = _currentRequestCancellation.Token,
+                    Priority = 0 // Normal priority
+                };
 
-            _uiUpdateTimer.Start();
-        }
+                // Queue the request for processing
+                ApplicationServiceManager.Instance.MessageQueue.QueueHttpRequest(requestMessage);
 
-        private async Task ReadResponseContentAsync(Stream responseStream, HttpResponseMessage response, 
-            HttpRequest httpRequest, string responseHeaders, CancellationToken cancellationToken)
-        {
-            using var reader = new StreamReader(responseStream, Encoding.UTF8, leaveOpen: false);
-            var contentBuilder = new StringBuilder();
-            var buffer = new char[BUFFER_SIZE];
-            int bytesRead;
-            long totalBytesRead = 0;
-
-            try
-            {
-                while ((bytesRead = await reader.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
+                // Update UI to show request is queued
+                ApplicationServiceManager.Instance.MessageQueue.QueueUiUpdate(new UiUpdateMessage
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                        break;
-
-                    contentBuilder.Append(buffer, 0, bytesRead);
-                    totalBytesRead += bytesRead * sizeof(char);
-
-                    // Update volatile field for timer
-                    _currentResponseContent = contentBuilder.ToString();
-
-                    // Check if we've hit the memory limit
-                    if (totalBytesRead > MAX_RESPONSE_SIZE)
+                    Priority = 100, // High priority for immediate UI feedback
+                    Description = "Update request status to processing",
+                    UiAction = () =>
                     {
-                        contentBuilder.AppendLine("\n\n[Response truncated - exceeded 10MB limit]");
-                        break;
+                        httpRequest.Response = "Processing request...";
                     }
-
-                    // Force garbage collection for very large responses to prevent memory pressure
-                    if (totalBytesRead % (2 * 1024 * 1024) == 0) // Every 2MB
-                    {
-                        GC.Collect(0, GCCollectionMode.Optimized);
-                    }
-                }
+                });
             }
-            catch (OutOfMemoryException)
+            catch (Exception ex)
             {
-                contentBuilder.Clear();
-                contentBuilder.AppendLine("[Response too large - out of memory]");
+                httpRequest.IsLoading = false;
+                httpRequest.Response = $"Error queuing request: {ex.Message}";
                 
-                // Force garbage collection
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
+                MessageBox.Show($"Error sending request: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-            _isStreamingComplete = true;
-            _uiUpdateTimer?.Stop();
-
-            // Final processing
-            var finalContent = contentBuilder.ToString();
-            var formattedContent = await FormatResponseContentAsync(finalContent, response);
-
-            await Dispatcher.InvokeAsync(() =>
-            {
-                httpRequest.ResponseSize = Encoding.UTF8.GetByteCount(finalContent);
-                httpRequest.Response = responseHeaders + formattedContent;
-            }, DispatcherPriority.Background);
-
-            // Clear builder to free memory immediately
-            contentBuilder.Clear();
-            contentBuilder = null;
-        }
-
-        private async Task<string> FormatResponseContentAsync(string content, HttpResponseMessage response)
-        {
-            // Don't format very large responses to avoid memory issues
-            if (content.Length > LARGE_RESPONSE_THRESHOLD)
-            {
-                return content;
-            }
-
-            return await Task.Run(() =>
-            {
-                try
-                {
-                    if (response.Content.Headers.ContentType?.MediaType?.Contains("json") == true)
-                    {
-                        // Use System.Text.Json for formatting
-                        using var document = JsonDocument.Parse(content);
-                        var options = new JsonSerializerOptions
-                        {
-                            WriteIndented = true
-                        };
-                        return JsonSerializer.Serialize(document, options);
-                    }
-                }
-                catch
-                {
-                    // Return original content if formatting fails
-                }
-
-                return content;
-            });
-        }
-
-        private string BuildResponseHeaders(HttpResponseMessage response, HttpRequestMessage request, HttpRequest httpRequest)
-        {
-            var responseText = new StringBuilder(1024);
-            responseText.AppendLine($"Status: {(int)response.StatusCode} {response.StatusCode}");
-            responseText.AppendLine($"Request URL: {request.RequestUri}");
-            
-            // Show authentication info (without sensitive data)
-            if (httpRequest.Authentication.Type != AuthenticationType.None)
-            {
-                responseText.AppendLine($"Authentication: {httpRequest.Authentication.Type}");
-            }
-            
-            responseText.AppendLine();
-            responseText.AppendLine("Response Headers:");
-            
-            foreach (var header in response.Headers)
-            {
-                responseText.AppendLine($"  {header.Key}: {string.Join(", ", header.Value)}");
-            }
-            
-            foreach (var header in response.Content.Headers)
-            {
-                responseText.AppendLine($"  {header.Key}: {string.Join(", ", header.Value)}");
-            }
-
-            responseText.AppendLine();
-            responseText.AppendLine("Response Body:");
-
-            return responseText.ToString();
-        }
-
-        private async Task ShowNotificationAsync(string title, string message, bool isSuccess)
-        {
-            await Dispatcher.InvokeAsync(() =>
-            {
-                // Simple non-blocking notification by prepending to the response
-                var timestampedNotification = $"[{DateTime.Now:HH:mm:ss}] {title}: {message}\n\n";
-                
-                if (DataContext is HttpRequest httpRequest)
-                {
-                    // Prepend notification to the existing response without excessive string operations
-                    var currentResponse = httpRequest.Response ?? "";
-                    if (currentResponse.Length < 1000) // Only prepend for small responses to avoid memory issues
-                    {
-                        httpRequest.Response = timestampedNotification + currentResponse;
-                    }
-                }
-                
-                // Also log to debug output for development
-                System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss}] {title}: {message}");
-            }, DispatcherPriority.Background);
-        }
-
-        private static void ApplyAuthentication(HttpRequestMessage request, AuthenticationSettings auth)
-        {
-            switch (auth.Type)
-            {
-                case AuthenticationType.BasicAuth:
-                    if (!string.IsNullOrWhiteSpace(auth.Username))
-                    {
-                        var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{auth.Username}:{auth.Password}"));
-                        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
-                    }
-                    break;
-
-                case AuthenticationType.BearerToken:
-                    if (!string.IsNullOrWhiteSpace(auth.Token))
-                    {
-                        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth.Token);
-                    }
-                    break;
-
-                case AuthenticationType.ApiKey:
-                    if (!string.IsNullOrWhiteSpace(auth.ApiKeyHeader) && !string.IsNullOrWhiteSpace(auth.ApiKeyValue))
-                    {
-                        request.Headers.TryAddWithoutValidation(auth.ApiKeyHeader, auth.ApiKeyValue);
-                    }
-                    break;
-
-                case AuthenticationType.None:
-                default:
-                    // No authentication
-                    break;
-            }
-        }
-
-        private static bool IsContentHeader(string headerName)
-        {
-            // Content headers that should be set on HttpContent rather than HttpRequestMessage
-            var contentHeaders = new[]
-            {
-                "Content-Type", "Content-Length", "Content-Encoding", "Content-Language",
-                "Content-Location", "Content-MD5", "Content-Range", "Expires", "Last-Modified"
-            };
-
-            return contentHeaders.Any(h => h.Equals(headerName, StringComparison.OrdinalIgnoreCase));
         }
 
         private void SaveAsJson_Click(object sender, RoutedEventArgs e)

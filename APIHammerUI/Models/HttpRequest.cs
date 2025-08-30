@@ -181,6 +181,18 @@ public class HttpQueryParameter : INotifyPropertyChanged
 
 public class HttpRequest : INotifyPropertyChanged
 {
+    public Guid Id { get; } = Guid.NewGuid();
+    // Streaming chunks (incremental, used to display while downloading)
+    private ObservableCollection<string> _responseChunks = new();
+    public ObservableCollection<string> ResponseChunks
+    {
+        get => _responseChunks;
+        set
+        {
+            _responseChunks = value;
+            OnPropertyChanged(nameof(ResponseChunks));
+        }
+    }
     private string _method = "GET";
     private string _url = "";
     private string _body = "";

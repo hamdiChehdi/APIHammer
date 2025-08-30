@@ -712,37 +712,18 @@
                               HorizontalScrollBarVisibility="Auto"
                               VirtualizingPanel.IsVirtualizing="True"
                               VirtualizingPanel.VirtualizationMode="Recycling">
-                    <TextBox Text="{Binding Response}"
-                             IsReadOnly="True"
-                             Background="Transparent"
-                             Foreground="{StaticResource TextSecondary}"
-                             BorderThickness="0"
-                             TextWrapping="Wrap"
-                             Padding="12"
-                             FontFamily="Consolas"
-                             FontSize="12"
-                             VirtualizingPanel.IsVirtualizing="True">
-                        <TextBox.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="Copy Response" Click="CopyResponse_Click">
-                                    <MenuItem.Icon>
-                                        <TextBlock Text="📋" FontFamily="Segoe UI Emoji"/>
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <Separator/>
-                                <MenuItem Header="Save as JSON..." Click="SaveAsJson_Click">
-                                    <MenuItem.Icon>
-                                        <TextBlock Text="💾" FontFamily="Segoe UI Emoji"/>
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <MenuItem Header="Save as Text..." Click="SaveAsText_Click">
-                                    <MenuItem.Icon>
-                                        <TextBlock Text="📄" FontFamily="Segoe UI Emoji"/>
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                            </ContextMenu>
-                        </TextBox.ContextMenu>
-                    </TextBox>
+                    <ItemsControl ItemsSource="{Binding ResponseChunks}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel IsItemsHost="True"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </ScrollViewer>
             </Border>
         </Grid>
