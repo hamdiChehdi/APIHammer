@@ -32,6 +32,7 @@ public class MessageQueueService : IDisposable
     private const int MAX_RESPONSE_SIZE = 10 * 1024 * 1024; // 10 MB
     private const int STREAM_BUFFER_SIZE = 16 * 1024; // 16 KB
     private const int UI_UPDATE_INTERVAL_MS = 300; // throttle UI updates
+    private static readonly int MAX_DISPLAY_SIZE = 10 * 1024; // 10 KB limit for displayed response
 
     private static readonly HttpClient _streamHttpClient = new()
     {
@@ -129,259 +130,412 @@ public class MessageQueueService : IDisposable
     private async Task ProcessHttpRequestStreamingAsync(RequestQueueMessage queueMessage, CancellationToken serviceToken)
     {
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(serviceToken, queueMessage.CancellationToken);
-        var ct = linkedCts.Token;
+        var cancellationToken = linkedCts.Token;
         var model = queueMessage.Request;
 
-        // Initial UI state
+        // Initialize request state
+        InitializeRequestState(model);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        
+        try
+        {
+            // Execute the HTTP request with streaming
+            var result = await ExecuteHttpRequestAsync(model, cancellationToken);
+            
+            // Process the streaming response
+            await ProcessStreamingResponseAsync(model, result.Response, result.Request, cancellationToken);
+            
+            // Finalize the request
+            await FinalizeRequestAsync(model, result.Response, result.Request, stopwatch.Elapsed, queueMessage);
+        }
+        catch (OperationCanceledException) when (queueMessage.CancellationToken.IsCancellationRequested)
+        {
+            HandleRequestCancellation(model);
+        }
+        catch (Exception ex)
+        {
+            HandleRequestError(model, ex, stopwatch.Elapsed);
+        }
+    }
+
+    private void InitializeRequestState(HttpRequest model)
+    {
         QueueUiUpdate(new UiUpdateMessage
         {
             Priority = 95,
-            Description = "Init streaming state",
+            Description = "Initialize streaming state",
             UiAction = () =>
             {
                 model.IsLoading = true;
                 model.RequestDateTime = DateTime.Now;
                 model.ResponseTime = null;
                 model.ResponseSize = null;
-                model.Response = string.Empty; // final concatenated later
+                model.Response = string.Empty;
                 model.ResponseChunks.Clear();
                 model.ResponseChunks.Add("(Connecting...)\n");
             }
         });
+    }
 
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        System.Net.Http.HttpRequestMessage? httpReq = null;
-        HttpResponseMessage? response = null;
-        Stream? stream = null;
-
-        try
+    private async Task<(HttpResponseMessage Response, System.Net.Http.HttpRequestMessage Request)> ExecuteHttpRequestAsync(
+        HttpRequest model, 
+        CancellationToken cancellationToken)
+    {
+        var httpRequest = CreateHttpRequestMessage(model);
+        var response = await _streamHttpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        
+        // Update UI with response headers
+        var headerText = BuildResponseHeaders(response, httpRequest, model);
+        QueueUiUpdate(new UiUpdateMessage
         {
-            httpReq = new System.Net.Http.HttpRequestMessage
+            Priority = 90,
+            Description = "Add headers chunk",
+            UiAction = () =>
             {
-                Method = model.Method switch
-                {
-                    "GET" => HttpMethod.Get,
-                    "POST" => HttpMethod.Post,
-                    "PUT" => HttpMethod.Put,
-                    "DELETE" => HttpMethod.Delete,
-                    "PATCH" => HttpMethod.Patch,
-                    "HEAD" => HttpMethod.Head,
-                    "OPTIONS" => HttpMethod.Options,
-                    _ => HttpMethod.Get
-                }
-            };
-
-            if (!Uri.TryCreate(model.FullUrl, UriKind.Absolute, out var uri))
-                throw new InvalidOperationException("Invalid URL format.");
-            httpReq.RequestUri = uri;
-
-            ApplyAuthentication(httpReq, model.Authentication);
-            foreach (var hdr in model.Headers.Where(h => h.IsEnabled && !string.IsNullOrWhiteSpace(h.Key)))
-            {
-                if (hdr.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) &&
-                    (model.Authentication.Type == AuthenticationType.BasicAuth || model.Authentication.Type == AuthenticationType.BearerToken))
-                    continue;
-                httpReq.Headers.TryAddWithoutValidation(hdr.Key, hdr.Value);
+                model.ResponseChunks.Clear();
+                model.ResponseChunks.Add(headerText);
             }
-            if (!string.IsNullOrWhiteSpace(model.Body) && model.Method is "POST" or "PUT" or "PATCH")
-            {
-                var contentType = model.Headers.FirstOrDefault(h => h.IsEnabled && h.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))?.Value ?? "application/json";
-                httpReq.Content = new StringContent(model.Body, Encoding.UTF8, contentType);
-            }
+        });
 
-            response = await _streamHttpClient.SendAsync(httpReq, HttpCompletionOption.ResponseHeadersRead, ct);
+        return (response, httpRequest);
+    }
 
-            var headerText = BuildResponseHeaders(response, httpReq, model);
-            QueueUiUpdate(new UiUpdateMessage
-            {
-                Priority = 90,
-                Description = "Add headers chunk",
-                UiAction = () =>
-                {
-                    model.ResponseChunks.Clear();
-                    model.ResponseChunks.Add(headerText); // header includes "Response Body:" line
-                }
-            });
+    private System.Net.Http.HttpRequestMessage CreateHttpRequestMessage(HttpRequest model)
+    {
+        if (!Uri.TryCreate(model.FullUrl, UriKind.Absolute, out var uri))
+            throw new InvalidOperationException("Invalid URL format.");
 
-            stream = await response.Content.ReadAsStreamAsync(ct);
-            using var reader = new StreamReader(stream, Encoding.UTF8, true, STREAM_BUFFER_SIZE, leaveOpen: true);
-            var buffer = new char[STREAM_BUFFER_SIZE];
-            int read;
-            long totalBytes = 0;
-            var sb = new StringBuilder();
-            int lastEmittedLength = 0;
-            DateTime lastEmit = DateTime.UtcNow;
-            bool truncated = false;
-
-            while ((read = await reader.ReadAsync(buffer.AsMemory(0, buffer.Length), ct)) > 0)
-            {
-                sb.Append(buffer, 0, read);
-                totalBytes += Encoding.UTF8.GetByteCount(buffer, 0, read);
-
-                if (totalBytes > MAX_RESPONSE_SIZE)
-                {
-                    truncated = true;
-                    break;
-                }
-
-                var now = DateTime.UtcNow;
-                if ((now - lastEmit).TotalMilliseconds >= UI_UPDATE_INTERVAL_MS)
-                {
-                    var newLen = sb.Length;
-                    if (newLen > lastEmittedLength)
-                    {
-                        var slice = sb.ToString(lastEmittedLength, newLen - lastEmittedLength);
-                        lastEmittedLength = newLen;
-                        QueueUiUpdate(new UiUpdateMessage
-                        {
-                            Priority = 60,
-                            Description = "Append streaming slice",
-                            UiAction = () =>
-                            {
-                                model.ResponseChunks.Add(slice);
-                            }
-                        });
-                    }
-                    lastEmit = now;
-                }
-            }
-
-            // Emit remaining slice
-            if (sb.Length > lastEmittedLength)
-            {
-                var slice = sb.ToString(lastEmittedLength, sb.Length - lastEmittedLength);
-                QueueUiUpdate(new UiUpdateMessage
-                {
-                    Priority = 60,
-                    Description = "Append final streaming slice",
-                    UiAction = () => model.ResponseChunks.Add(slice)
-                });
-            }
-
-            sw.Stop();
-            if (truncated)
-            {
-                QueueUiUpdate(new UiUpdateMessage
-                {
-                    Priority = 55,
-                    Description = "Add truncated notice",
-                    UiAction = () => model.ResponseChunks.Add("\n[Response truncated - exceeded 10MB limit]\n")
-                });
-            }
-
-            // Optionally JSON format (only if small) -> replace body part
-            string rawBody = sb.ToString();
-            string finalBody = rawBody;
-            bool formatted = false;
-            if (!truncated && rawBody.Length < 1_000_000 && response.Content.Headers.ContentType?.MediaType?.Contains("json") == true)
-            {
-                try
-                {
-                    using var doc = JsonDocument.Parse(rawBody);
-                    finalBody = JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
-                    formatted = true;
-                }
-                catch { }
-            }
-
-            if (formatted)
-            {
-                // Replace existing body chunks (keep first headers chunk)
-                QueueUiUpdate(new UiUpdateMessage
-                {
-                    Priority = 70,
-                    Description = "Replace with formatted JSON",
-                    UiAction = () =>
-                    {
-                        while (model.ResponseChunks.Count > 1)
-                            model.ResponseChunks.RemoveAt(1);
-                        model.ResponseChunks.Add(finalBody);
-                    }
-                });
-            }
-
-            var elapsed = sw.Elapsed;
-            var sizeBytes = Math.Min(totalBytes, MAX_RESPONSE_SIZE);
-            var fullResponse = headerText + finalBody + (truncated ? "\n[Response truncated - exceeded 10MB limit]\n" : string.Empty);
-
-            QueueUiUpdate(new UiUpdateMessage
-            {
-                Priority = 85,
-                Description = "Finalize metadata + full response string",
-                UiAction = () =>
-                {
-                    model.IsLoading = false;
-                    model.ResponseTime = elapsed;
-                    model.ResponseSize = sizeBytes;
-                    model.Response = fullResponse; // for save / copy
-                }
-            });
-
-            QueueNotification(new NotificationMessage
-            {
-                Title = "Request Completed",
-                Message = $"HTTP {model.Method} completed. Time: {elapsed.TotalMilliseconds:F0} ms, Size: {sizeBytes / 1024.0:F1} KB",
-                IsSuccess = true
-            });
-
-            queueMessage.CompletionCallback?.Invoke(new HttpRequestResponseMessage
-            {
-                OriginalRequestId = queueMessage.Id,
-                Request = model,
-                Success = true,
-                Response = fullResponse,
-                ResponseTime = elapsed,
-                ResponseSize = sizeBytes,
-                RequestDateTime = model.RequestDateTime ?? DateTime.Now
-            });
-        }
-        catch (OperationCanceledException) when (queueMessage.CancellationToken.IsCancellationRequested)
+        var httpRequest = new System.Net.Http.HttpRequestMessage
         {
-            QueueUiUpdate(new UiUpdateMessage
-            {
-                Priority = 95,
-                Description = "Cancelled",
-                UiAction = () =>
-                {
-                    model.IsLoading = false;
-                    model.ResponseChunks.Add("\n[Request cancelled]\n");
-                    model.Response = "Request was cancelled.";
-                }
-            });
-            QueueNotification(new NotificationMessage
-            {
-                Title = "Request Cancelled",
-                Message = "The HTTP request was cancelled by the user.",
-                IsSuccess = false
-            });
-        }
-        catch (Exception ex)
+            Method = GetHttpMethod(model.Method),
+            RequestUri = uri
+        };
+
+        ApplyAuthentication(httpRequest, model.Authentication);
+        ApplyHeaders(httpRequest, model);
+        ApplyRequestBody(httpRequest, model);
+
+        return httpRequest;
+    }
+
+    private static HttpMethod GetHttpMethod(string method) => method switch
+    {
+        "GET" => HttpMethod.Get,
+        "POST" => HttpMethod.Post,
+        "PUT" => HttpMethod.Put,
+        "DELETE" => HttpMethod.Delete,
+        "PATCH" => HttpMethod.Patch,
+        "HEAD" => HttpMethod.Head,
+        "OPTIONS" => HttpMethod.Options,
+        _ => HttpMethod.Get
+    };
+
+    private static void ApplyHeaders(System.Net.Http.HttpRequestMessage httpRequest, HttpRequest model)
+    {
+        foreach (var header in model.Headers.Where(h => h.IsEnabled && !string.IsNullOrWhiteSpace(h.Key)))
         {
-            sw.Stop();
-            QueueUiUpdate(new UiUpdateMessage
-            {
-                Priority = 95,
-                Description = "Failed",
-                UiAction = () =>
-                {
-                    model.IsLoading = false;
-                    model.ResponseChunks.Add($"\nError: {ex.Message}\n");
-                    model.Response = $"Error: {ex.Message}\n\nRequest URL: {model.FullUrl}";
-                }
-            });
-            QueueNotification(new NotificationMessage
-            {
-                Title = "Request Failed",
-                Message = $"HTTP request failed: {ex.Message}",
-                IsSuccess = false
-            });
+            // Skip authorization headers that are handled by authentication
+            if (header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) &&
+                (model.Authentication.Type == AuthenticationType.BasicAuth || 
+                 model.Authentication.Type == AuthenticationType.BearerToken))
+                continue;
+
+            httpRequest.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
-        finally
+    }
+
+    private static void ApplyRequestBody(System.Net.Http.HttpRequestMessage httpRequest, HttpRequest model)
+    {
+        if (string.IsNullOrWhiteSpace(model.Body) || 
+            model.Method is not ("POST" or "PUT" or "PATCH"))
+            return;
+
+        var contentType = model.Headers
+            .FirstOrDefault(h => h.IsEnabled && h.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+            ?.Value ?? "application/json";
+
+        httpRequest.Content = new StringContent(model.Body, Encoding.UTF8, contentType);
+    }
+
+    private async Task ProcessStreamingResponseAsync(
+        HttpRequest model, 
+        HttpResponseMessage response, 
+        System.Net.Http.HttpRequestMessage httpRequest,
+        CancellationToken cancellationToken)
+    {
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var reader = new StreamReader(stream, Encoding.UTF8, true, STREAM_BUFFER_SIZE, leaveOpen: true);
+
+        var responseContent = await StreamResponseContentAsync(model, reader, cancellationToken);
+        var formattedContent = await FormatResponseIfNeeded(responseContent.Content, response, responseContent.WasTruncated);
+
+        if (formattedContent != responseContent.Content)
         {
-            stream?.Dispose();
-            response?.Dispose();
-            httpReq?.Dispose();
+            ReplaceResponseBodyWithFormatted(model, formattedContent);
         }
+    }
+
+    private async Task<(string Content, bool WasTruncated)> StreamResponseContentAsync(
+        HttpRequest model,
+        StreamReader reader,
+        CancellationToken cancellationToken)
+    {
+        var buffer = new char[STREAM_BUFFER_SIZE];
+        var contentBuilder = new StringBuilder();
+        var lastEmittedLength = 0;
+        var lastEmitTime = DateTime.UtcNow;
+        var totalBytes = 0L;
+        var wasTruncated = false;
+
+        int bytesRead;
+        while ((bytesRead = await reader.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
+        {
+            contentBuilder.Append(buffer, 0, bytesRead);
+            totalBytes += Encoding.UTF8.GetByteCount(buffer, 0, bytesRead);
+
+            if (totalBytes > MAX_RESPONSE_SIZE)
+            {
+                wasTruncated = true;
+                break;
+            }
+
+            var updateResult = await UpdateUIWithStreamingContentIfNeeded(model, contentBuilder, lastEmittedLength, lastEmitTime);
+            lastEmittedLength = updateResult.LastEmittedLength;
+            lastEmitTime = updateResult.LastEmitTime;
+        }
+
+        // Emit any remaining content
+        await EmitRemainingContent(model, contentBuilder, lastEmittedLength);
+
+        if (wasTruncated)
+        {
+            await AddTruncationNotice(model);
+        }
+
+        return (contentBuilder.ToString(), wasTruncated);
+    }
+
+    private async Task<(int LastEmittedLength, DateTime LastEmitTime)> UpdateUIWithStreamingContentIfNeeded(
+        HttpRequest model, 
+        StringBuilder contentBuilder, 
+        int lastEmittedLength, 
+        DateTime lastEmitTime)
+    {
+        var now = DateTime.UtcNow;
+        if ((now - lastEmitTime).TotalMilliseconds < UI_UPDATE_INTERVAL_MS)
+            return (lastEmittedLength, lastEmitTime);
+
+        var currentLength = contentBuilder.Length;
+        if (currentLength <= lastEmittedLength)
+            return (lastEmittedLength, lastEmitTime);
+
+        var slice = contentBuilder.ToString(lastEmittedLength, currentLength - lastEmittedLength);
+
+        QueueUiUpdate(new UiUpdateMessage
+        {
+            Priority = 60,
+            Description = "Append streaming slice",
+            UiAction = () => AddContentSliceToModel(model, slice)
+        });
+
+        return (currentLength, now);
+    }
+
+    private static void AddContentSliceToModel(HttpRequest model, string slice)
+    {
+        model.ResponseChunks.Add(slice);
+
+        // Trim chunks if they exceed display limit
+        var totalSize = model.ResponseChunks.Sum(chunk => Encoding.UTF8.GetByteCount(chunk));
+        while (totalSize > MAX_DISPLAY_SIZE && model.ResponseChunks.Count > 1)
+        {
+            totalSize -= Encoding.UTF8.GetByteCount(model.ResponseChunks[0]);
+            model.ResponseChunks.RemoveAt(0);
+        }
+    }
+
+    private async Task EmitRemainingContent(HttpRequest model, StringBuilder contentBuilder, int lastEmittedLength)
+    {
+        if (contentBuilder.Length <= lastEmittedLength)
+            return;
+
+        var slice = contentBuilder.ToString(lastEmittedLength, contentBuilder.Length - lastEmittedLength);
+        QueueUiUpdate(new UiUpdateMessage
+        {
+            Priority = 60,
+            Description = "Append final streaming slice",
+            UiAction = () => model.ResponseChunks.Add(slice)
+        });
+    }
+
+    private async Task AddTruncationNotice(HttpRequest model)
+    {
+        QueueUiUpdate(new UiUpdateMessage
+        {
+            Priority = 55,
+            Description = "Add truncated notice",
+            UiAction = () => model.ResponseChunks.Add("\n[Response truncated - exceeded 10MB limit]\n")
+        });
+    }
+
+    private async Task<string> FormatResponseIfNeeded(string content, HttpResponseMessage response, bool wasTruncated)
+    {
+        if (wasTruncated || 
+            content.Length >= 1_000_000 || 
+            !IsJsonContent(response))
+            return content;
+
+        return await TryFormatAsJson(content);
+    }
+
+    private static bool IsJsonContent(HttpResponseMessage response)
+    {
+        return response.Content.Headers.ContentType?.MediaType?.Contains("json") == true;
+    }
+
+    private async Task<string> TryFormatAsJson(string content)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(content);
+                return JsonSerializer.Serialize(document, new JsonSerializerOptions { WriteIndented = true });
+            }
+            catch
+            {
+                return content;
+            }
+        });
+    }
+
+    private void ReplaceResponseBodyWithFormatted(HttpRequest model, string formattedContent)
+    {
+        QueueUiUpdate(new UiUpdateMessage
+        {
+            Priority = 70,
+            Description = "Replace with formatted JSON",
+            UiAction = () =>
+            {
+                // Keep headers chunk, replace body chunks
+                while (model.ResponseChunks.Count > 1)
+                    model.ResponseChunks.RemoveAt(1);
+                model.ResponseChunks.Add(formattedContent);
+            }
+        });
+    }
+
+    private async Task FinalizeRequestAsync(
+        HttpRequest model, 
+        HttpResponseMessage response, 
+        System.Net.Http.HttpRequestMessage httpRequest,
+        TimeSpan elapsed,
+        RequestQueueMessage queueMessage)
+    {
+        var responseSize = CalculateResponseSize(model);
+        var fullResponse = BuildFullResponseString(model, response, httpRequest);
+
+        QueueUiUpdate(new UiUpdateMessage
+        {
+            Priority = 85,
+            Description = "Finalize metadata + full response string",
+            UiAction = () =>
+            {
+                model.IsLoading = false;
+                model.ResponseTime = elapsed;
+                model.ResponseSize = responseSize;
+                model.Response = fullResponse;
+            }
+        });
+
+        QueueSuccessNotification(model, elapsed, responseSize);
+        InvokeCompletionCallback(queueMessage, model, fullResponse, elapsed, responseSize);
+    }
+
+    private static long CalculateResponseSize(HttpRequest model)
+    {
+        return model.ResponseChunks.Sum(chunk => Encoding.UTF8.GetByteCount(chunk));
+    }
+
+    private string BuildFullResponseString(HttpRequest model, HttpResponseMessage response, System.Net.Http.HttpRequestMessage httpRequest)
+    {
+        var headerText = BuildResponseHeaders(response, httpRequest, model);
+        var bodyText = string.Join("", model.ResponseChunks.Skip(1)); // Skip header chunk
+        return headerText + bodyText;
+    }
+
+    private void QueueSuccessNotification(HttpRequest model, TimeSpan elapsed, long responseSize)
+    {
+        QueueNotification(new NotificationMessage
+        {
+            Title = "Request Completed",
+            Message = $"HTTP {model.Method} completed. Time: {elapsed.TotalMilliseconds:F0} ms, Size: {responseSize / 1024.0:F1} KB",
+            IsSuccess = true
+        });
+    }
+
+    private void InvokeCompletionCallback(
+        RequestQueueMessage queueMessage, 
+        HttpRequest model, 
+        string fullResponse, 
+        TimeSpan elapsed, 
+        long responseSize)
+    {
+        queueMessage.CompletionCallback?.Invoke(new HttpRequestResponseMessage
+        {
+            OriginalRequestId = queueMessage.Id,
+            Request = model,
+            Success = true,
+            Response = fullResponse,
+            ResponseTime = elapsed,
+            ResponseSize = responseSize,
+            RequestDateTime = model.RequestDateTime ?? DateTime.Now
+        });
+    }
+
+    private void HandleRequestCancellation(HttpRequest model)
+    {
+        QueueUiUpdate(new UiUpdateMessage
+        {
+            Priority = 95,
+            Description = "Cancelled",
+            UiAction = () =>
+            {
+                model.IsLoading = false;
+                model.ResponseChunks.Add("\n[Request cancelled]\n");
+                model.Response = "Request was cancelled.";
+            }
+        });
+
+        QueueNotification(new NotificationMessage
+        {
+            Title = "Request Cancelled",
+            Message = "The HTTP request was cancelled by the user.",
+            IsSuccess = false
+        });
+    }
+
+    private void HandleRequestError(HttpRequest model, Exception exception, TimeSpan elapsed)
+    {
+        QueueUiUpdate(new UiUpdateMessage
+        {
+            Priority = 95,
+            Description = "Failed",
+            UiAction = () =>
+            {
+                model.IsLoading = false;
+                model.ResponseChunks.Add($"\nError: {exception.Message}\n");
+                model.Response = $"Error: {exception.Message}\n\nRequest URL: {model.FullUrl}";
+            }
+        });
+
+        QueueNotification(new NotificationMessage
+        {
+            Title = "Request Failed",
+            Message = $"HTTP request failed: {exception.Message}",
+            IsSuccess = false
+        });
     }
 
     private static void ApplyAuthentication(System.Net.Http.HttpRequestMessage request, AuthenticationSettings auth)

@@ -361,6 +361,7 @@ public class HttpRequest : INotifyPropertyChanged
         }
     }
 
+
     public bool IsLoading
     {
         get => _isLoading;

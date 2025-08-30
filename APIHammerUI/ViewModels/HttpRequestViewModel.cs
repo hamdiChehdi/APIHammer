@@ -81,6 +81,8 @@ public class HttpRequestViewModel : INotifyPropertyChanged, IDisposable
             _currentRequestCancellation?.Cancel();
             HttpRequest.IsLoading = false;
             HttpRequest.Response = "Request cancelled by user.";
+            HttpRequest.ResponseChunks.Clear();
+            HttpRequest.ResponseChunks.Add("Request cancelled by user.");
             return;
         }
 
@@ -90,63 +92,42 @@ public class HttpRequestViewModel : INotifyPropertyChanged, IDisposable
 
         try
         {
-            // Update UI immediately to show loading state
-            await Application.Current.Dispatcher.InvokeAsync(() =>
+            // Clear previous chunks and set initial state
+            HttpRequest.ResponseChunks.Clear();
+            HttpRequest.IsLoading = true;
+            HttpRequest.Response = "Queuing request...";
+            HttpRequest.ResponseChunks.Add("(Initializing request...)");
+
+            // Check if ApplicationServiceManager is initialized
+            if (ApplicationServiceManager.Instance == null)
             {
-                HttpRequest.IsLoading = true;
-                HttpRequest.Response = "Sending request...";
-            }, System.Windows.Threading.DispatcherPriority.Background);
-
-            // Perform the HTTP request on a background thread
-            var result = await Task.Run(async () =>
-            {
-                return await _httpRequestService.SendRequestAsync(HttpRequest, _currentRequestCancellation.Token);
-            });
-
-            // Check if cancellation was requested before updating UI
-            if (_currentRequestCancellation.Token.IsCancellationRequested)
-                return;
-
-            // Update UI with results
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                HttpRequest.IsLoading = false;
-                HttpRequest.Response = result.Response;
-                HttpRequest.ResponseTime = result.ResponseTime;
-                HttpRequest.ResponseSize = result.ResponseSize;
-                HttpRequest.RequestDateTime = result.RequestDateTime;
-            }, System.Windows.Threading.DispatcherPriority.Background);
-
-            // Show notification only if not cancelled
-            if (!_currentRequestCancellation.Token.IsCancellationRequested)
-            {
-                var title = result.Success ? "Request Completed" : "Request Failed";
-                var message = result.Success 
-                    ? $"HTTP {HttpRequest.Method} request completed successfully\n" +
-                      $"Time: {HttpRequest.ResponseTimeFormatted}\n" +
-                      $"Size: {HttpRequest.ResponseSizeFormatted}"
-                    : $"HTTP request failed: {result.ErrorMessage}";
-
-                await ShowNotificationAsync(title, message, result.Success);
+                throw new InvalidOperationException("ApplicationServiceManager is not initialized");
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Handle cancellation
-            await Application.Current.Dispatcher.InvokeAsync(() =>
+
+            // Create and queue the HTTP request message using the message queue system
+            var requestMessage = new APIHammerUI.Messages.HttpRequestMessage
             {
-                HttpRequest.IsLoading = false;
-                HttpRequest.Response = "Request was cancelled.";
-            }, System.Windows.Threading.DispatcherPriority.Background);
+                Request = HttpRequest,
+                CancellationToken = _currentRequestCancellation.Token,
+                Priority = 0 // Normal priority
+            };
+
+            // Queue the request for processing
+            ApplicationServiceManager.Instance.MessageQueue.QueueHttpRequest(requestMessage);
+            
+            // Update UI to show it's queued
+            HttpRequest.ResponseChunks.Clear();
+            HttpRequest.ResponseChunks.Add("(Request queued for processing...)");
         }
         catch (Exception ex)
         {
-            // Handle other exceptions
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                HttpRequest.IsLoading = false;
-                HttpRequest.Response = $"Error: {ex.Message}\n\nRequest URL: {HttpRequest.FullUrl}";
-            }, System.Windows.Threading.DispatcherPriority.Background);
+            HttpRequest.IsLoading = false;
+            HttpRequest.Response = $"Error queuing request: {ex.Message}";
+            HttpRequest.ResponseChunks.Clear();
+            HttpRequest.ResponseChunks.Add($"Error queuing request: {ex.Message}");
+            
+            MessageBox.Show($"Error sending request: {ex.Message}", "Error", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
