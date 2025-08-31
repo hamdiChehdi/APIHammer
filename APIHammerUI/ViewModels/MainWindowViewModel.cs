@@ -84,9 +84,9 @@ public class MainWindowViewModel : INotifyPropertyChanged
         NewHttpTabCommand = new RelayCommand(ExecuteNewHttpTab);
         NewWebSocketTabCommand = new RelayCommand(ExecuteNewWebSocketTab);
         NewGrpcTabCommand = new RelayCommand(ExecuteNewGrpcTab);
-        RenameTabMenuCommand = new RelayCommand<RequestTab>(ExecuteRenameTabMenu);
-        MoveTabMenuCommand = new RelayCommand<RequestTab>(ExecuteMoveTabMenu);
-        CloseTabMenuCommand = new RelayCommand<RequestTab>(ExecuteCloseTabMenu);
+        RenameTabMenuCommand = new RelayCommand<RequestTab>(ExecuteRenameTabMenu, CanExecuteRenameTabMenu);
+        MoveTabMenuCommand = new RelayCommand<RequestTab>(ExecuteMoveTabMenu, CanExecuteMoveTabMenu);
+        CloseTabMenuCommand = new RelayCommand<RequestTab>(ExecuteCloseTabMenu, CanExecuteCloseTabMenu);
         CloseTabCommand = new RelayCommand<RequestTab>(ExecuteCloseTab);
         ImportOpenApiCommand = new RelayCommand(ExecuteImportOpenApi);
 
@@ -204,6 +204,10 @@ public class MainWindowViewModel : INotifyPropertyChanged
     {
         return SelectedCollection != null;
     }
+
+    private bool CanExecuteRenameTabMenu(RequestTab? tab) => tab != null;
+    private bool CanExecuteMoveTabMenu(RequestTab? tab) => tab != null;
+    private bool CanExecuteCloseTabMenu(RequestTab? tab) => tab != null;
 
     private async Task ExecuteSendAllRequestsAsync(TabCollection? collection)
     {
