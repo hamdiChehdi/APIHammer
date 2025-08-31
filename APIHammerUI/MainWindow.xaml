@@ -122,19 +122,19 @@
                                 <ContextMenu Background="{StaticResource DarkCard}" 
                                            BorderBrush="{StaticResource DarkBorder}">
                                     <MenuItem Header="Rename" 
-                                            Click="RenameTabMenuItem_Click" 
-                                            Tag="{Binding}"
+                                            Command="{Binding DataContext.RenameTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
                                             Background="{StaticResource DarkCard}"
                                             Foreground="{StaticResource TextPrimary}"/>
                                     <MenuItem Header="Move to Collection..." 
-                                            Click="MoveTabMenuItem_Click" 
-                                            Tag="{Binding}"
+                                            Command="{Binding DataContext.MoveTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
                                             Background="{StaticResource DarkCard}"
                                             Foreground="{StaticResource TextPrimary}"/>
                                     <Separator Background="{StaticResource DarkBorder}"/>
                                     <MenuItem Header="Close" 
-                                            Click="CloseTabMenuItem_Click" 
-                                            Tag="{Binding}"
+                                            Command="{Binding DataContext.CloseTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
                                             Background="{StaticResource DarkCard}"
                                             Foreground="{StaticResource TextPrimary}"/>
                                 </ContextMenu>
@@ -154,8 +154,8 @@
                             <Button Grid.Column="1" 
                                     Content="×" 
                                     Style="{StaticResource CloseButtonStyle}"
-                                    Click="CloseTab_Click"
-                                    Tag="{Binding}"/>
+                                    Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}"/>
                         </Grid>
                     </DataTemplate>
                 </Setter.Value>
@@ -208,19 +208,19 @@
                                 <ContextMenu Background="{StaticResource DarkCard}" 
                                            BorderBrush="{StaticResource DarkBorder}">
                                     <MenuItem Header="Rename" 
-                                            Click="RenameTabMenuItem_Click" 
-                                            Tag="{Binding}"
+                                            Command="{Binding DataContext.RenameTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
                                             Background="{StaticResource DarkCard}"
                                             Foreground="{StaticResource TextPrimary}"/>
                                     <MenuItem Header="Move to Collection..." 
-                                            Click="MoveTabMenuItem_Click" 
-                                            Tag="{Binding}"
+                                            Command="{Binding DataContext.MoveTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
                                             Background="{StaticResource DarkCard}"
                                             Foreground="{StaticResource TextPrimary}"/>
                                     <Separator Background="{StaticResource DarkBorder}"/>
                                     <MenuItem Header="Close" 
-                                            Click="CloseTabMenuItem_Click" 
-                                            Tag="{Binding}"
+                                            Command="{Binding DataContext.CloseTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
                                             Background="{StaticResource DarkCard}"
                                             Foreground="{StaticResource TextPrimary}"/>
                                 </ContextMenu>
@@ -258,8 +258,8 @@
                                 <Button Grid.Column="2" 
                                         Content="×" 
                                         Style="{StaticResource CloseButtonStyle}"
-                                        Click="CloseTab_Click"
-                                        Tag="{Binding}"
+                                        Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
                                         Visibility="Hidden"
                                         x:Name="CloseButton"/>
                             </Grid>
@@ -453,7 +453,7 @@
                           Foreground="{StaticResource TextSecondary}"
                           Margin="0,0,8,0"/>
                 <Button Content="New Collection" 
-                        Click="CreateNewCollection_Click" 
+                        Command="{Binding CreateNewCollectionCommand}" 
                         Style="{StaticResource ModernButtonStyle}"
                         Margin="0,0,8,0"
                         Padding="12,6"
@@ -479,21 +479,21 @@
                           Foreground="{StaticResource TextSecondary}"
                           Margin="0,0,8,0"/>
                 <Button Content="+ HTTP" 
-                        Click="NewHttpTab_Click" 
+                        Command="{Binding NewHttpTabCommand}" 
                         Style="{StaticResource ModernButtonStyle}"
                         Background="{StaticResource SuccessGreen}"
                         Margin="0,0,6,0"
                         Padding="10,6"
                         FontSize="11"/>
                 <Button Content="+ WebSocket" 
-                        Click="NewWebSocketTab_Click" 
+                        Command="{Binding NewWebSocketTabCommand}" 
                         Style="{StaticResource ModernButtonStyle}"
                         Background="{StaticResource WarningOrange}"
                         Margin="0,0,6,0"
                         Padding="10,6"
                         FontSize="11"/>
                 <Button Content="+ gRPC" 
-                        Click="NewGrpcTab_Click" 
+                        Command="{Binding NewGrpcTabCommand}" 
                         Style="{StaticResource ModernButtonStyle}"
                         Background="{StaticResource AccentBlue}"
                         Margin="0,0,16,0"
@@ -543,7 +543,7 @@
                                    Foreground="{StaticResource TextMuted}"/>
                         <Button Grid.Column="1"
                                 Content="+"
-                                Click="CreateNewCollection_Click"
+                                Command="{Binding CreateNewCollectionCommand}"
                                 ToolTip="Create New Collection"
                                 Style="{StaticResource ModernButtonStyle}"
                                 Width="24"
@@ -562,27 +562,27 @@
                         Padding="12,8">
                     <WrapPanel Orientation="Horizontal">
                         <Button Content="+ New Collection" 
-                                Click="CreateNewCollection_Click"
+                                Command="{Binding CreateNewCollectionCommand}"
                                 Style="{StaticResource ModernButtonStyle}"
                                 FontSize="11"
                                 Padding="8,4"
                                 Margin="0,0,4,4"/>
                         <!-- TODO: Re-enable OpenAPI import after fixing dependencies -->
                         <!--<Button Content="📁 Import OpenAPI" 
-                                Click="ImportOpenApi_Click"
+                                Command="{Binding ImportOpenApiCommand}"
                                 Style="{StaticResource ModernButtonStyle}"
                                 Background="{StaticResource SuccessGreen}"
                                 FontSize="11"
                                 Padding="8,4"
                                 Margin="0,0,4,4"/>-->
                         <Button Content="Rename" 
-                                Click="RenameCollection_Click"
+                                Command="{Binding RenameCollectionCommand}"
                                 Style="{StaticResource SecondaryButtonStyle}"
                                 FontSize="11"
                                 Padding="8,4"
                                 Margin="0,0,4,4"/>
                         <Button Content="Delete" 
-                                Click="DeleteCollection_Click"
+                                Command="{Binding DeleteCollectionCommand}"
                                 Style="{StaticResource SecondaryButtonStyle}"
                                 FontSize="11"
                                 Padding="8,4"
@@ -605,8 +605,8 @@
                                     <ContextMenu Background="{StaticResource DarkCard}" 
                                                BorderBrush="{StaticResource DarkBorder}">
                                         <MenuItem Header="Send All Requests" 
-                                                Click="SendAllRequestsMenuItem_Click" 
-                                                Tag="{Binding}"
+                                                Command="{Binding DataContext.SendAllRequestsCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
                                                 Background="{StaticResource DarkCard}"
                                                 Foreground="{StaticResource TextPrimary}">
                                             <MenuItem.Icon>
@@ -615,19 +615,19 @@
                                         </MenuItem>
                                         <Separator Background="{StaticResource DarkBorder}"/>
                                         <MenuItem Header="Rename Collection" 
-                                                Click="RenameCollectionMenuItem_Click" 
-                                                Tag="{Binding}"
+                                                Command="{Binding DataContext.RenameCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
                                                 Background="{StaticResource DarkCard}"
                                                 Foreground="{StaticResource TextPrimary}"/>
                                         <MenuItem Header="Export Collection..." 
-                                                Click="ExportCollectionMenuItem_Click" 
-                                                Tag="{Binding}"
+                                                Command="{Binding DataContext.ExportCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
                                                 Background="{StaticResource DarkCard}"
                                                 Foreground="{StaticResource TextPrimary}"/>
                                         <Separator Background="{StaticResource DarkBorder}"/>
                                         <MenuItem Header="Delete Collection" 
-                                                Click="DeleteCollectionMenuItem_Click" 
-                                                Tag="{Binding}"
+                                                Command="{Binding DataContext.DeleteCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
                                                 Background="{StaticResource DarkCard}"
                                                 Foreground="{StaticResource ErrorRed}"/>
                                     </ContextMenu>
@@ -652,19 +652,19 @@
                                             <ContextMenu Background="{StaticResource DarkCard}" 
                                                        BorderBrush="{StaticResource DarkBorder}">
                                                 <MenuItem Header="Rename" 
-                                                        Click="RenameTabMenuItem_Click" 
-                                                        Tag="{Binding}"
+                                                        Command="{Binding DataContext.RenameTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
                                                         Background="{StaticResource DarkCard}"
                                                         Foreground="{StaticResource TextPrimary}"/>
                                                 <MenuItem Header="Move to Collection..." 
-                                                        Click="MoveTabMenuItem_Click" 
-                                                        Tag="{Binding}"
+                                                        Command="{Binding DataContext.MoveTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
                                                         Background="{StaticResource DarkCard}"
                                                         Foreground="{StaticResource TextPrimary}"/>
                                                 <Separator Background="{StaticResource DarkBorder}"/>
                                                 <MenuItem Header="Close" 
-                                                        Click="CloseTabMenuItem_Click" 
-                                                        Tag="{Binding}"
+                                                        Command="{Binding DataContext.CloseTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
                                                         Background="{StaticResource DarkCard}"
                                                         Foreground="{StaticResource TextPrimary}"/>
                                             </ContextMenu>
@@ -704,21 +704,21 @@
                                    Margin="0,0,0,8"/>
                         <StackPanel Orientation="Horizontal">
                             <Button Content="HTTP" 
-                                    Click="NewHttpTab_Click"
+                                    Command="{Binding NewHttpTabCommand}"
                                     Style="{StaticResource ModernButtonStyle}"
                                     Background="{StaticResource SuccessGreen}"
                                     Padding="6,3"
                                     FontSize="10"
                                     Margin="0,0,4,0"/>
                             <Button Content="WS" 
-                                    Click="NewWebSocketTab_Click"
+                                    Command="{Binding NewWebSocketTabCommand}"
                                     Style="{StaticResource ModernButtonStyle}"
                                     Background="{StaticResource WarningOrange}"
                                     Padding="6,3"
                                     FontSize="10"
                                     Margin="0,0,4,0"/>
                             <Button Content="gRPC" 
-                                    Click="NewGrpcTab_Click"
+                                    Command="{Binding NewGrpcTabCommand}"
                                     Style="{StaticResource ModernButtonStyle}"
                                     Background="{StaticResource AccentBlue}"
                                     Padding="6,3"
@@ -798,22 +798,22 @@
                     <StackPanel Orientation="Horizontal" 
                                HorizontalAlignment="Center">
                         <Button Content="Create Collection"
-                               Click="CreateNewCollection_Click"
+                               Command="{Binding CreateNewCollectionCommand}"
                                Style="{StaticResource ModernButtonStyle}"
                                Margin="0,0,12,0"
                                Padding="16,8"/>
                         <Button Content="+ HTTP Request"
-                               Click="NewHttpTab_Click"
+                               Command="{Binding NewHttpTabCommand}"
                                Style="{StaticResource SecondaryButtonStyle}"
                                Margin="0,0,8,0"
                                Padding="16,8"/>
                         <Button Content="+ WebSocket"
-                               Click="NewWebSocketTab_Click"
+                               Command="{Binding NewWebSocketTabCommand}"
                                Style="{StaticResource SecondaryButtonStyle}"
                                Margin="0,0,8,0"
                                Padding="16,8"/>
                         <Button Content="+ gRPC"
-                               Click="NewGrpcTab_Click"
+                               Command="{Binding NewGrpcTabCommand}"
                                Style="{StaticResource SecondaryButtonStyle}"
                                Padding="16,8"/>
                     </StackPanel>

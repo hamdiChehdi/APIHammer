@@ -197,6 +197,7 @@ public class HttpRequest : INotifyPropertyChanged
     private string _url = "";
     private string _body = "";
     private string _response = "";
+    private string _trucatedResponse = "truncated response";
     private bool _isLoading;
     private ObservableCollection<HttpHeaderItem> _headers;
     private ObservableCollection<HttpQueryParameter> _queryParameters;
@@ -358,6 +359,16 @@ public class HttpRequest : INotifyPropertyChanged
         {
             _response = value;
             OnPropertyChanged(nameof(Response));
+        }
+    }
+
+    public string TruncatedResponse
+    {
+        get => _trucatedResponse;
+        set
+        {
+            _trucatedResponse = value;
+            OnPropertyChanged(nameof(TruncatedResponse));
         }
     }
 

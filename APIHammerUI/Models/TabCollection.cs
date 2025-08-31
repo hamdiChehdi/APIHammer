@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
@@ -6,6 +7,16 @@ namespace APIHammerUI.Models;
 public class TabCollection : INotifyPropertyChanged
 {
     private string _name = "New Collection";
+
+    public TabCollection()
+    {
+        Id = Guid.NewGuid();
+    }
+
+    /// <summary>
+    /// Unique identifier for persistence
+    /// </summary>
+    public Guid Id { get; set; }
 
     public string Name 
     { 

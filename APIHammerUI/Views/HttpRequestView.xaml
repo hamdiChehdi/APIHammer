@@ -801,7 +801,7 @@
                               HorizontalScrollBarVisibility="Auto"
                               VirtualizingPanel.IsVirtualizing="True"
                               VirtualizingPanel.VirtualizationMode="Recycling">
-                    <TextBox Text="{Binding Response}"
+                    <TextBox Text="{Binding TruncatedResponse}"
                              IsReadOnly="True"
                              Background="Transparent"
                              Foreground="{StaticResource TextSecondary}"

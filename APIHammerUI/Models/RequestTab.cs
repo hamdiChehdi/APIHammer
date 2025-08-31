@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 
 namespace APIHammerUI.Models;
@@ -14,6 +15,16 @@ public class RequestTab : INotifyPropertyChanged
     private string _name = "New Request";
     private RequestType _requestType = RequestType.HTTP;
     private bool _isSelected;
+
+    public RequestTab()
+    {
+        Id = Guid.NewGuid();
+    }
+
+    /// <summary>
+    /// Unique identifier for persistence
+    /// </summary>
+    public Guid Id { get; set; }
 
     public string Name
     {

@@ -96,6 +96,7 @@ public class HttpRequestViewModel : INotifyPropertyChanged, IDisposable
             HttpRequest.ResponseChunks.Clear();
             HttpRequest.IsLoading = true;
             HttpRequest.Response = "Queuing request...";
+            HttpRequest.TruncatedResponse = "Queuing request...";
             HttpRequest.ResponseChunks.Add("(Initializing request...)");
 
             // Check if ApplicationServiceManager is initialized
@@ -597,6 +598,10 @@ public class HttpRequestViewModel : INotifyPropertyChanged, IDisposable
     private void OnHttpRequestPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(HttpRequest.Response))
+        {
+            OnPropertyChanged(nameof(HasResponse));
+        }
+        if (e.PropertyName == nameof(HttpRequest.TruncatedResponse))
         {
             OnPropertyChanged(nameof(HasResponse));
         }

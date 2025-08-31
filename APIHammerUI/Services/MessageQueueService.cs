@@ -446,6 +446,7 @@ public class MessageQueueService : IDisposable
                 model.ResponseTime = elapsed;
                 model.ResponseSize = responseSize;
                 model.Response = fullResponse;
+                model.TruncatedResponse = fullResponse[0..10000];
             }
         });
 

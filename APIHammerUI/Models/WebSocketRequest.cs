@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace APIHammerUI.Models;
@@ -9,6 +10,14 @@ public class WebSocketRequest : INotifyPropertyChanged
     private string _messages = "";
     private bool _isConnected;
     private bool _isConnecting;
+
+    public WebSocketRequest()
+    {
+        Headers = new ObservableCollection<HttpHeaderItem>
+        {
+            new() { Key = "", Value = "", IsEnabled = true }
+        };
+    }
 
     public string Url
     {
@@ -61,6 +70,8 @@ public class WebSocketRequest : INotifyPropertyChanged
             OnPropertyChanged(nameof(ConnectButtonText));
         }
     }
+
+    public ObservableCollection<HttpHeaderItem> Headers { get; set; }
 
     public string ConnectButtonText => IsConnecting ? "Connecting..." : (IsConnected ? "Disconnect" : "Connect");
 
