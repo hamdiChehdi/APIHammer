@@ -119,25 +119,7 @@
                     <DataTemplate>
                         <Grid>
                             <Grid.ContextMenu>
-                                <ContextMenu Background="{StaticResource DarkCard}" 
-                                           BorderBrush="{StaticResource DarkBorder}">
-                                    <MenuItem Header="Rename" 
-                                            Command="{Binding DataContext.RenameTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding}"
-                                            Background="{StaticResource DarkCard}"
-                                            Foreground="{StaticResource TextPrimary}"/>
-                                    <MenuItem Header="Move to Collection..." 
-                                            Command="{Binding DataContext.MoveTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding}"
-                                            Background="{StaticResource DarkCard}"
-                                            Foreground="{StaticResource TextPrimary}"/>
-                                    <Separator Background="{StaticResource DarkBorder}"/>
-                                    <MenuItem Header="Close" 
-                                            Command="{Binding DataContext.CloseTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding}"
-                                            Background="{StaticResource DarkCard}"
-                                            Foreground="{StaticResource TextPrimary}"/>
-                                </ContextMenu>
+                                <StaticResource ResourceKey="TabManagementContextMenu"/>
                             </Grid.ContextMenu>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -208,18 +190,18 @@
                                 <ContextMenu Background="{StaticResource DarkCard}" 
                                            BorderBrush="{StaticResource DarkBorder}">
                                     <MenuItem Header="Rename" 
-                                            Command="{Binding DataContext.RenameTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            Command="{Binding PlacementTarget.Tag.RenameTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
                                             CommandParameter="{Binding}"
                                             Background="{StaticResource DarkCard}"
                                             Foreground="{StaticResource TextPrimary}"/>
                                     <MenuItem Header="Move to Collection..." 
-                                            Command="{Binding DataContext.MoveTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            Command="{Binding PlacementTarget.Tag.MoveTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
                                             CommandParameter="{Binding}"
                                             Background="{StaticResource DarkCard}"
                                             Foreground="{StaticResource TextPrimary}"/>
                                     <Separator Background="{StaticResource DarkBorder}"/>
                                     <MenuItem Header="Close" 
-                                            Command="{Binding DataContext.CloseTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            Command="{Binding PlacementTarget.Tag.CloseTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
                                             CommandParameter="{Binding}"
                                             Background="{StaticResource DarkCard}"
                                             Foreground="{StaticResource TextPrimary}"/>
@@ -425,6 +407,26 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8"/>
         </Style>
+
+        <!-- Reusable ContextMenu for Tab Management -->
+        <ContextMenu x:Key="TabManagementContextMenu" Background="{StaticResource DarkCard}" BorderBrush="{StaticResource DarkBorder}">
+            <MenuItem Header="Rename"
+                      Command="{Binding PlacementTarget.Tag.RenameTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
+                      CommandParameter="{Binding}"
+                      Background="{StaticResource DarkCard}"
+                      Foreground="{StaticResource TextPrimary}"/>
+            <MenuItem Header="Move to Collection..."
+                      Command="{Binding PlacementTarget.Tag.MoveTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
+                      CommandParameter="{Binding}"
+                      Background="{StaticResource DarkCard}"
+                      Foreground="{StaticResource TextPrimary}"/>
+            <Separator Background="{StaticResource DarkBorder}"/>
+            <MenuItem Header="Close"
+                      Command="{Binding PlacementTarget.Tag.CloseTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
+                      CommandParameter="{Binding}"
+                      Background="{StaticResource DarkCard}"
+                      Foreground="{StaticResource TextPrimary}"/>
+        </ContextMenu>
     </Window.Resources>
 
     <Grid Background="{StaticResource DarkBackground}">
