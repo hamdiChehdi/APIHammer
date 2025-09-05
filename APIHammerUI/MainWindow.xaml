@@ -1,433 +1,10 @@
 ﻿<Window x:Class="APIHammerUI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="clr-namespace:APIHammerUI"
-        xmlns:converters="clr-namespace:APIHammerUI.Converters"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:materialIcons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
-        mc:Ignorable="d"
         Title="API Hammer - API Testing Tool" Height="700" Width="1400"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E1E">
-    
-    <Window.Resources>
-        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
-        <converters:ConnectionStatusConverter x:Key="ConnectionStatusConverter"/>
-        <converters:RequestTypeIconConverter x:Key="RequestTypeIconConverter"/>
-        <converters:RequestTypeColorConverter x:Key="RequestTypeColorConverter"/>
-        <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter" />
-
-        <!-- Dark Theme Color Resources -->
-        <SolidColorBrush x:Key="DarkBackground" Color="#1E1E1E"/>
-        <SolidColorBrush x:Key="DarkPanel" Color="#2D2D2D"/>
-        <SolidColorBrush x:Key="DarkCard" Color="#3C3C3C"/>
-        <SolidColorBrush x:Key="DarkBorder" Color="#404040"/>
-        <SolidColorBrush x:Key="AccentBlue" Color="#007ACC"/>
-        <SolidColorBrush x:Key="AccentBlueHover" Color="#1F85CC"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="TextSecondary" Color="#CCCCCC"/>
-        <SolidColorBrush x:Key="TextMuted" Color="#999999"/>
-        <SolidColorBrush x:Key="SuccessGreen" Color="#4CAF50"/>
-        <SolidColorBrush x:Key="WarningOrange" Color="#FF9800"/>
-        <SolidColorBrush x:Key="ErrorRed" Color="#F44336"/>
-
-        <!-- Modern Button Style -->
-        <Style x:Key="ModernButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource AccentBlue}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="16,8"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="Medium"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Margin="{TemplateBinding Padding}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource AccentBlueHover}"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#0F5A99"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Secondary Button Style -->
-        <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
-            <Setter Property="Background" Value="{StaticResource DarkCard}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DarkBorder}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#4A4A4A"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- Close Button Style -->
-        <Style x:Key="CloseButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Width" Value="20"/>
-            <Setter Property="Height" Value="20"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="3">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource ErrorRed}"/>
-                                <Setter Property="Foreground" Value="White"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Modern TabItem Style -->
-        <Style TargetType="TabItem">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="16,12"/>
-            <Setter Property="Margin" Value="0,0,2,0"/>
-            <Setter Property="HeaderTemplate">
-                <Setter.Value>
-                    <DataTemplate>
-                        <Grid>
-                            <Grid.ContextMenu>
-                                <StaticResource ResourceKey="TabManagementContextMenu"/>
-                            </Grid.ContextMenu>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            
-                            <TextBlock Grid.Column="0" 
-                                       Text="{Binding Name}" 
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"
-                                       FontSize="13"
-                                       Foreground="{StaticResource TextPrimary}"/>
-                            
-                            <Button Grid.Column="1" 
-                                    Content="×" 
-                                    Style="{StaticResource CloseButtonStyle}"
-                                    Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="{Binding}"/>
-                        </Grid>
-                    </DataTemplate>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="Border"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}"
-                                CornerRadius="6,6,0,0"
-                                Margin="{TemplateBinding Margin}">
-                            <ContentPresenter x:Name="ContentSite"
-                                            VerticalAlignment="Center"
-                                            HorizontalAlignment="Center"
-                                            ContentSource="Header"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource DarkCard}"/>
-                                <Setter Property="Panel.ZIndex" Value="100"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource DarkPanel}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Tab Explorer Item Style -->
-        <Style x:Key="TabExplorerItemStyle" TargetType="ListBoxItem">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="0"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="Border" 
-                                Padding="12,10" 
-                                Background="Transparent"
-                                BorderThickness="0,0,0,1"
-                                BorderBrush="{StaticResource DarkBorder}">
-                            <Border.ContextMenu>
-                                <ContextMenu Background="{StaticResource DarkCard}" 
-                                           BorderBrush="{StaticResource DarkBorder}">
-                                    <MenuItem Header="Rename" 
-                                            Command="{Binding PlacementTarget.Tag.RenameTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
-                                            CommandParameter="{Binding}"
-                                            Background="{StaticResource DarkCard}"
-                                            Foreground="{StaticResource TextPrimary}"/>
-                                    <MenuItem Header="Move to Collection..." 
-                                            Command="{Binding PlacementTarget.Tag.MoveTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
-                                            CommandParameter="{Binding}"
-                                            Background="{StaticResource DarkCard}"
-                                            Foreground="{StaticResource TextPrimary}"/>
-                                    <Separator Background="{StaticResource DarkBorder}"/>
-                                    <MenuItem Header="Close" 
-                                            Command="{Binding PlacementTarget.Tag.CloseTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
-                                            CommandParameter="{Binding}"
-                                            Background="{StaticResource DarkCard}"
-                                            Foreground="{StaticResource TextPrimary}"/>
-                                </ContextMenu>
-                            </Border.ContextMenu>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="24"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                <!-- Request Type Icon -->
-                                <Border Grid.Column="0" 
-                                        Width="20" Height="20"
-                                        CornerRadius="3"
-                                        Background="{Binding RequestType, Converter={StaticResource RequestTypeColorConverter}}"
-                                        Margin="0,0,8,0">
-                                    <TextBlock Text="{Binding RequestType, Converter={StaticResource RequestTypeIconConverter}}"
-                                             HorizontalAlignment="Center"
-                                             VerticalAlignment="Center"
-                                             FontSize="10"
-                                             Foreground="White"
-                                             FontWeight="Bold"/>
-                                </Border>
-                                
-                                <!-- Tab Name -->
-                                <TextBlock Grid.Column="1" 
-                                           Text="{Binding Name}" 
-                                           VerticalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis"
-                                           FontSize="13"
-                                           Foreground="{StaticResource TextPrimary}"/>
-                                
-                                <!-- Close Button -->
-                                <Button Grid.Column="2" 
-                                        Content="×" 
-                                        Style="{StaticResource CloseButtonStyle}"
-                                        Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        CommandParameter="{Binding}"
-                                        Visibility="Hidden"
-                                        x:Name="CloseButton"/>
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource AccentBlue}"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource DarkCard}"/>
-                                <Setter TargetName="CloseButton" Property="Visibility" Value="Visible"/>
-                            </Trigger>
-                            <MultiTrigger>
-                                <MultiTrigger.Conditions>
-                                    <Condition Property="IsSelected" Value="True"/>
-                                    <Condition Property="IsMouseOver" Value="True"/>
-                                </MultiTrigger.Conditions>
-                                <Setter TargetName="CloseButton" Property="Visibility" Value="Visible"/>
-                            </MultiTrigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Modern TabControl Style -->
-        <Style TargetType="TabControl">
-            <Setter Property="Background" Value="{StaticResource DarkCard}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DarkBorder}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabControl">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            
-                            <!-- Tab Strip -->
-                            <Border Grid.Row="0" 
-                                    Background="{StaticResource DarkPanel}"
-                                    BorderBrush="{StaticResource DarkBorder}"
-                                    BorderThickness="0,0,0,1">
-                                <TabPanel x:Name="HeaderPanel"
-                                         IsItemsHost="True"
-                                         Margin="12,8,12,0"/>
-                            </Border>
-                            
-                            <!-- Content Area -->
-                            <Border Grid.Row="1"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}">
-                                <ContentPresenter x:Name="PART_SelectedContentHost"
-                                                ContentSource="SelectedContent"/>
-                            </Border>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- TreeViewItem Style -->
-        <Style TargetType="TreeViewItem">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="Margin" Value="0,1"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TreeViewItem">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            
-                            <!-- Header -->
-                            <Border x:Name="Border"
-                                    Grid.Row="0"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    Padding="{TemplateBinding Padding}"
-                                    CornerRadius="4">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <!-- Expander Button -->
-                                    <ToggleButton x:Name="Expander"
-                                                  Grid.Column="0"
-                                                  ClickMode="Press"
-                                                  IsChecked="{Binding Path=IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
-                                                  Background="Transparent"
-                                                  BorderThickness="0"
-                                                  Width="16"
-                                                  Height="16"
-                                                  Margin="0,0,4,0">
-                                        <ToggleButton.Template>
-                                            <ControlTemplate TargetType="ToggleButton">
-                                                <Border Background="{TemplateBinding Background}">
-                                                    <Path x:Name="ExpandPath"
-                                                          HorizontalAlignment="Center"
-                                                          VerticalAlignment="Center"
-                                                          Data="M 4 0 L 8 4 L 4 8 Z"
-                                                          Fill="{StaticResource TextMuted}"
-                                                          Stroke="{StaticResource TextMuted}"
-                                                          StrokeThickness="0"/>
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsChecked" Value="True">
-                                                        <Setter TargetName="ExpandPath" Property="Data" Value="M 0 4 L 4 8 L 8 4 Z"/>
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </ToggleButton.Template>
-                                    </ToggleButton>
-                                    
-                                    <!-- Content -->
-                                    <ContentPresenter x:Name="PART_Header"
-                                                      Grid.Column="1"
-                                                      ContentSource="Header"
-                                                      HorizontalAlignment="Left"
-                                                      VerticalAlignment="Center"/>
-                                </Grid>
-                            </Border>
-                            
-                            <!-- Children -->
-                            <ItemsPresenter x:Name="ItemsHost"
-                                            Grid.Row="1"
-                                            Margin="16,0,0,0"/>
-                        </Grid>
-                        
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsExpanded" Value="False">
-                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
-                            </Trigger>
-                            <Trigger Property="HasItems" Value="False">
-                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource AccentBlue}"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource DarkCard}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- TreeView Style -->
-        <Style TargetType="TreeView">
-            <Setter Property="Background" Value="{StaticResource DarkPanel}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource DarkBorder}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="8"/>
-        </Style>
-
-        <!-- Reusable ContextMenu for Tab Management -->
-        <ContextMenu x:Key="TabManagementContextMenu" Background="{StaticResource DarkCard}" BorderBrush="{StaticResource DarkBorder}">
-            <MenuItem Header="Rename"
-                      Command="{Binding PlacementTarget.Tag.RenameTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
-                      CommandParameter="{Binding}"
-                      Background="{StaticResource DarkCard}"
-                      Foreground="{StaticResource TextPrimary}"/>
-            <MenuItem Header="Move to Collection..."
-                      Command="{Binding PlacementTarget.Tag.MoveTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
-                      CommandParameter="{Binding}"
-                      Background="{StaticResource DarkCard}"
-                      Foreground="{StaticResource TextPrimary}"/>
-            <Separator Background="{StaticResource DarkBorder}"/>
-            <MenuItem Header="Close"
-                      Command="{Binding PlacementTarget.Tag.CloseTabMenuCommand, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}}"
-                      CommandParameter="{Binding}"
-                      Background="{StaticResource DarkCard}"
-                      Foreground="{StaticResource TextPrimary}"/>
-        </ContextMenu>
-    </Window.Resources>
 
     <Grid Background="{StaticResource DarkBackground}">
         <Grid.RowDefinitions>
@@ -440,291 +17,100 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Modern Toolbar -->
-        <Border Grid.Row="0" Grid.ColumnSpan="3" 
-                Background="{StaticResource DarkPanel}"
-                BorderBrush="{StaticResource DarkBorder}"
-                BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal" 
-                        Margin="16,12">
-                <!-- Collection Management -->
-                <TextBlock Text="Collections:" 
-                          VerticalAlignment="Center" 
-                          FontSize="12"
-                          FontWeight="Medium"
-                          Foreground="{StaticResource TextSecondary}"
-                          Margin="0,0,8,0"/>
-                <Button Content="New Collection" 
-                        Command="{Binding CreateNewCollectionCommand}" 
-                        Style="{StaticResource ModernButtonStyle}"
-                        Margin="0,0,8,0"
-                        Padding="12,6"
-                        FontSize="12"/>
-                <!-- TODO: Re-enable OpenAPI import after fixing dependencies -->
-                <!--<Button Content="Import OpenAPI" 
-                        Click="ImportOpenApi_Click" 
-                        Style="{StaticResource ModernButtonStyle}"
-                        Background="{StaticResource SuccessGreen}"
-                        Margin="0,0,8,0"
-                        Padding="12,6"
-                        FontSize="12"/>-->
-                
-                <Rectangle Width="1" 
-                          Fill="{StaticResource DarkBorder}" 
-                          Margin="8,4,16,4"/>
-                
-                <!-- Quick Request Creation -->
-                <TextBlock Text="Quick Add:" 
-                          VerticalAlignment="Center" 
-                          FontSize="12"
-                          FontWeight="Medium"
-                          Foreground="{StaticResource TextSecondary}"
-                          Margin="0,0,8,0"/>
-                <Button Content="+ HTTP" 
-                        Command="{Binding NewHttpTabCommand}" 
-                        Style="{StaticResource ModernButtonStyle}"
-                        Background="{StaticResource SuccessGreen}"
-                        Margin="0,0,6,0"
-                        Padding="10,6"
-                        FontSize="11"/>
-                <Button Content="+ WebSocket" 
-                        Command="{Binding NewWebSocketTabCommand}" 
-                        Style="{StaticResource ModernButtonStyle}"
-                        Background="{StaticResource WarningOrange}"
-                        Margin="0,0,6,0"
-                        Padding="10,6"
-                        FontSize="11"/>
-                <Button Content="+ gRPC" 
-                        Command="{Binding NewGrpcTabCommand}" 
-                        Style="{StaticResource ModernButtonStyle}"
-                        Background="{StaticResource AccentBlue}"
-                        Margin="0,0,16,0"
-                        Padding="10,6"
-                        FontSize="11"/>
-                
-                <Rectangle Width="1" 
-                          Fill="{StaticResource DarkBorder}" 
-                          Margin="0,4"/>
-                
-                <TextBlock Text="Tip: Right-click items to rename or delete" 
-                          VerticalAlignment="Center" 
-                          Margin="16,0,0,0"
-                          FontSize="11"
-                          Foreground="{StaticResource TextMuted}"/>
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Grid.ColumnSpan="3" Background="{StaticResource DarkPanel}" BorderBrush="{StaticResource DarkBorder}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Margin="16,12">
+                <TextBlock Text="Collections:" VerticalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" Margin="0,0,8,0"/>
+                <Button Content="New Collection" Command="{Binding CreateNewCollectionCommand}" Style="{StaticResource ModernButtonStyle}" Margin="0,0,8,0" Padding="12,6" FontSize="12"/>
+                <Rectangle Width="1" Fill="{StaticResource DarkBorder}" Margin="8,4,16,4"/>
+                <TextBlock Text="Quick Add:" VerticalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" Margin="0,0,8,0"/>
+                <Button Content="+ HTTP" Command="{Binding NewHttpTabCommand}" Style="{StaticResource ModernButtonStyle}" Background="{StaticResource SuccessGreen}" Margin="0,0,6,0" Padding="10,6" FontSize="11"/>
+                <Button Content="+ WebSocket" Command="{Binding NewWebSocketTabCommand}" Style="{StaticResource ModernButtonStyle}" Background="{StaticResource WarningOrange}" Margin="0,0,6,0" Padding="10,6" FontSize="11"/>
+                <Button Content="+ gRPC" Command="{Binding NewGrpcTabCommand}" Style="{StaticResource ModernButtonStyle}" Background="{StaticResource AccentBlue}" Margin="0,0,16,0" Padding="10,6" FontSize="11"/>
+                <Rectangle Width="1" Fill="{StaticResource DarkBorder}" Margin="0,4"/>
+                <TextBlock Text="Tip: Right-click items to rename or delete" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="11" Foreground="{StaticResource TextMuted}"/>
             </StackPanel>
         </Border>
 
-        <!-- Tab Explorer Panel -->
-        <Border Grid.Row="1" Grid.Column="0" 
-                Background="{StaticResource DarkPanel}"
-                BorderBrush="{StaticResource DarkBorder}"
-                BorderThickness="0,0,1,0">
+        <!-- Left Panel -->
+        <Border Grid.Row="1" Grid.Column="0" Background="{StaticResource DarkPanel}" BorderBrush="{StaticResource DarkBorder}" BorderThickness="0,0,1,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                
-                <!-- Collections Header -->
-                <Border Grid.Row="0" 
-                        Background="{StaticResource DarkCard}"
-                        BorderBrush="{StaticResource DarkBorder}"
-                        BorderThickness="0,0,0,1"
-                        Padding="16,12">
+
+                <!-- Header -->
+                <Border Grid.Row="0" Background="{StaticResource DarkCard}" BorderBrush="{StaticResource DarkBorder}" BorderThickness="0,0,0,1" Padding="16,12">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0"
-                                   Text="COLLECTIONS" 
-                                   FontWeight="Bold" 
-                                   FontSize="11"
-                                   VerticalAlignment="Center"
-                                   Foreground="{StaticResource TextMuted}"/>
-                        <Button Grid.Column="1"
-                                Content="+"
-                                Command="{Binding CreateNewCollectionCommand}"
-                                ToolTip="Create New Collection"
-                                Style="{StaticResource ModernButtonStyle}"
-                                Width="24"
-                                Height="24"
-                                Padding="0"
-                                FontSize="14"
-                                FontWeight="Bold"/>
+                        <TextBlock Grid.Column="0" Text="COLLECTIONS" FontWeight="Bold" FontSize="11" VerticalAlignment="Center" Foreground="{StaticResource TextMuted}"/>
+                        <Button Grid.Column="1" Content="+" Command="{Binding CreateNewCollectionCommand}" ToolTip="Create New Collection" Style="{StaticResource ModernButtonStyle}" Width="24" Height="24" Padding="0" FontSize="14" FontWeight="Bold"/>
                     </Grid>
                 </Border>
 
-                <!-- Collection Management Toolbar -->
-                <Border Grid.Row="1" 
-                        Background="{StaticResource DarkPanel}"
-                        BorderBrush="{StaticResource DarkBorder}"
-                        BorderThickness="0,0,0,1"
-                        Padding="12,8">
-                    <WrapPanel Orientation="Horizontal">
-                        <Button Content="+ New Collection" 
-                                Command="{Binding CreateNewCollectionCommand}"
-                                Style="{StaticResource ModernButtonStyle}"
-                                FontSize="11"
-                                Padding="8,4"
-                                Margin="0,0,4,4"/>
-                        <!-- TODO: Re-enable OpenAPI import after fixing dependencies -->
-                        <!--<Button Content="📁 Import OpenAPI" 
-                                Command="{Binding ImportOpenApiCommand}"
-                                Style="{StaticResource ModernButtonStyle}"
-                                Background="{StaticResource SuccessGreen}"
-                                FontSize="11"
-                                Padding="8,4"
-                                Margin="0,0,4,4"/>-->
-                        <Button Content="Rename" 
-                                Command="{Binding RenameCollectionCommand}"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                FontSize="11"
-                                Padding="8,4"
-                                Margin="0,0,4,4"/>
-                        <Button Content="Delete" 
-                                Command="{Binding DeleteCollectionCommand}"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                FontSize="11"
-                                Padding="8,4"
-                                Margin="0,0,0,4"/>
+                <!-- Collection Toolbar -->
+                <Border Grid.Row="1" Background="{StaticResource DarkPanel}" BorderBrush="{StaticResource DarkBorder}" BorderThickness="0,0,0,1" Padding="12,8">
+                    <WrapPanel>
+                        <Button Content="+ New Collection" Command="{Binding CreateNewCollectionCommand}" Style="{StaticResource ModernButtonStyle}" FontSize="11" Padding="8,4" Margin="0,0,4,4"/>
+                        <Button Content="Rename" Command="{Binding RenameCollectionCommand}" Style="{StaticResource SecondaryButtonStyle}" FontSize="11" Padding="8,4" Margin="0,0,4,4"/>
+                        <Button Content="Delete" Command="{Binding DeleteCollectionCommand}" Style="{StaticResource SecondaryButtonStyle}" FontSize="11" Padding="8,4" Margin="0,0,0,4"/>
                     </WrapPanel>
                 </Border>
-                
-                <!-- Explorer TreeView -->
-                <TreeView Grid.Row="2" 
-                          x:Name="TabExplorerTreeView"
-                          ItemsSource="{Binding TabCollections}" 
-                          SelectedItemChanged="TreeView_SelectedItemChanged"
-                          Margin="8"
-                          Background="Transparent"
-                          BorderThickness="0">
+
+                <!-- TreeView -->
+                <TreeView Grid.Row="2" x:Name="TabExplorerTreeView" ItemsSource="{Binding TabCollections}" SelectedItemChanged="TreeView_SelectedItemChanged" Margin="8" Background="Transparent" BorderThickness="0">
                     <TreeView.ItemTemplate>
                         <HierarchicalDataTemplate ItemsSource="{Binding Tabs}">
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
-                                    <ContextMenu Background="{StaticResource DarkCard}" 
-                                               BorderBrush="{StaticResource DarkBorder}">
-                                        <MenuItem Header="Send All Requests" 
-                                                Command="{Binding DataContext.SendAllRequestsCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding}"
-                                                Background="{StaticResource DarkCard}"
-                                                Foreground="{StaticResource TextPrimary}">
-                                            <MenuItem.Icon>
-                                                <TextBlock Text="🚀" FontSize="12"/>
-                                            </MenuItem.Icon>
-                                        </MenuItem>
-                                        <Separator Background="{StaticResource DarkBorder}"/>
-                                        <MenuItem Header="Rename Collection" 
-                                                Command="{Binding DataContext.RenameCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding}"
-                                                Background="{StaticResource DarkCard}"
-                                                Foreground="{StaticResource TextPrimary}"/>
-                                        <MenuItem Header="Export Collection..." 
-                                                Command="{Binding DataContext.ExportCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding}"
-                                                Background="{StaticResource DarkCard}"
-                                                Foreground="{StaticResource TextPrimary}"/>
-                                        <Separator Background="{StaticResource DarkBorder}"/>
-                                        <MenuItem Header="Delete Collection" 
-                                                Command="{Binding DataContext.DeleteCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding}"
-                                                Background="{StaticResource DarkCard}"
-                                                Foreground="{StaticResource ErrorRed}"/>
+                                    <ContextMenu>
+                                        <MenuItem Header="Send All Requests" Command="{Binding DataContext.SendAllRequestsCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                        <Separator />
+                                        <MenuItem Header="Rename Collection" Command="{Binding DataContext.RenameCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                        <MenuItem Header="Export Collection..." Command="{Binding DataContext.ExportCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                        <Separator />
+                                        <MenuItem Header="Delete Collection" Command="{Binding DataContext.DeleteCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
-                                <materialIcons:MaterialIcon Kind="Group"
-                                                            Margin="0,0,6,0"
-                                                            Foreground="{StaticResource AccentBlue}"
-                                                            />
-                                <TextBlock Text="{Binding Name}" 
-                                           Foreground="{StaticResource TextPrimary}"
-                                           FontWeight="Medium"
-                                           FontSize="13"/>
-                                <TextBlock Text="{Binding Tabs.Count, StringFormat='({0})'}" 
-                                           Foreground="{StaticResource TextMuted}"
-                                           FontSize="11"
-                                           Margin="6,0,0,0"/>
+                                <materialIcons:MaterialIcon Kind="Group" Margin="0,0,6,0" Foreground="{StaticResource AccentBlue}"/>
+                                <TextBlock Text="{Binding Name}" Foreground="{StaticResource TextPrimary}" FontWeight="Medium" FontSize="13"/>
+                                <TextBlock Text="{Binding Tabs.Count, StringFormat='({0})'}" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="6,0,0,0"/>
                             </StackPanel>
                             <HierarchicalDataTemplate.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" Margin="0,2">
                                         <StackPanel.ContextMenu>
-                                            <ContextMenu Background="{StaticResource DarkCard}" 
-                                                       BorderBrush="{StaticResource DarkBorder}">
-                                                <MenuItem Header="Rename" 
-                                                        Command="{Binding DataContext.RenameTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                        CommandParameter="{Binding}"
-                                                        Background="{StaticResource DarkCard}"
-                                                        Foreground="{StaticResource TextPrimary}"/>
-                                                <MenuItem Header="Move to Collection..." 
-                                                        Command="{Binding DataContext.MoveTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                        CommandParameter="{Binding}"
-                                                        Background="{StaticResource DarkCard}"
-                                                        Foreground="{StaticResource TextPrimary}"/>
-                                                <Separator Background="{StaticResource DarkBorder}"/>
-                                                <MenuItem Header="Close" 
-                                                        Command="{Binding DataContext.CloseTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                        CommandParameter="{Binding}"
-                                                        Background="{StaticResource DarkCard}"
-                                                        Foreground="{StaticResource TextPrimary}"/>
+                                            <ContextMenu>
+                                                <MenuItem Header="Rename" Command="{Binding DataContext.RenameTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                <MenuItem Header="Move to Collection..." Command="{Binding DataContext.MoveTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                <Separator />
+                                                <MenuItem Header="Close" Command="{Binding DataContext.CloseTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                             </ContextMenu>
                                         </StackPanel.ContextMenu>
-                                        <Border Background="{Binding RequestType, Converter={StaticResource RequestTypeColorConverter}}"
-                                                CornerRadius="3"
-                                                Padding="6,2"
-                                                Margin="0,0,8,0">
-                                            <TextBlock Text="{Binding RequestType, Converter={StaticResource RequestTypeIconConverter}}"
-                                                       Foreground="White"
-                                                       FontSize="8"
-                                                       FontWeight="Bold"/>
+                                        <Border Background="{Binding RequestType, Converter={StaticResource RequestTypeColorConverter}}" CornerRadius="3" Padding="6,2" Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding RequestType, Converter={StaticResource RequestTypeIconConverter}}" Foreground="White" FontSize="8" FontWeight="Bold"/>
                                         </Border>
-                                        <TextBlock Text="{Binding Name}" 
-                                                   Foreground="{StaticResource TextPrimary}"
-                                                   FontSize="12"
-                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Name}" Foreground="{StaticResource TextPrimary}" FontSize="12" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </HierarchicalDataTemplate.ItemTemplate>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>
                 </TreeView>
-                
-                <!-- Quick Add Tabs Section -->
-                <Border Grid.Row="2" 
-                        Background="{StaticResource DarkCard}"
-                        BorderBrush="{StaticResource DarkBorder}"
-                        BorderThickness="0,1,0,0"
-                        Padding="12,8"
-                        VerticalAlignment="Bottom">
+
+                <!-- Quick Add Section -->
+                <Border Grid.Row="2" Background="{StaticResource DarkCard}" BorderBrush="{StaticResource DarkBorder}" BorderThickness="0,1,0,0" Padding="12,8" VerticalAlignment="Bottom">
                     <StackPanel>
-                        <TextBlock Text="QUICK ADD"
-                                   FontWeight="Bold" 
-                                   FontSize="10"
-                                   Foreground="{StaticResource TextMuted}"
-                                   Margin="0,0,0,8"/>
+                        <TextBlock Text="QUICK ADD" FontWeight="Bold" FontSize="10" Foreground="{StaticResource TextMuted}" Margin="0,0,0,8"/>
                         <StackPanel Orientation="Horizontal">
-                            <Button Content="HTTP" 
-                                    Command="{Binding NewHttpTabCommand}"
-                                    Style="{StaticResource ModernButtonStyle}"
-                                    Background="{StaticResource SuccessGreen}"
-                                    Padding="6,3"
-                                    FontSize="10"
-                                    Margin="0,0,4,0"/>
-                            <Button Content="WS" 
-                                    Command="{Binding NewWebSocketTabCommand}"
-                                    Style="{StaticResource ModernButtonStyle}"
-                                    Background="{StaticResource WarningOrange}"
-                                    Padding="6,3"
-                                    FontSize="10"
-                                    Margin="0,0,4,0"/>
-                            <Button Content="gRPC" 
-                                    Command="{Binding NewGrpcTabCommand}"
-                                    Style="{StaticResource ModernButtonStyle}"
-                                    Background="{StaticResource AccentBlue}"
-                                    Padding="6,3"
-                                    FontSize="10"/>
+                            <Button Content="HTTP" Command="{Binding NewHttpTabCommand}" Style="{StaticResource ModernButtonStyle}" Background="{StaticResource SuccessGreen}" Padding="6,3" FontSize="10" Margin="0,0,4,0"/>
+                            <Button Content="WS" Command="{Binding NewWebSocketTabCommand}" Style="{StaticResource ModernButtonStyle}" Background="{StaticResource WarningOrange}" Padding="6,3" FontSize="10" Margin="0,0,4,0"/>
+                            <Button Content="gRPC" Command="{Binding NewGrpcTabCommand}" Style="{StaticResource ModernButtonStyle}" Background="{StaticResource AccentBlue}" Padding="6,3" FontSize="10"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -732,22 +118,12 @@
         </Border>
 
         <!-- Splitter -->
-        <GridSplitter Grid.Row="1" Grid.Column="1" 
-                      Width="1"
-                      Background="{StaticResource DarkBorder}"
-                      HorizontalAlignment="Stretch"
-                      ResizeBehavior="PreviousAndNext"/>
+        <GridSplitter Grid.Row="1" Grid.Column="1" Width="1" Background="{StaticResource DarkBorder}" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext"/>
 
-        <!-- Main Content Area -->
+        <!-- Main Content -->
         <Grid Grid.Row="1" Grid.Column="2" Background="{StaticResource DarkCard}">
-            <!-- Main Content -->
-            <ContentPresenter x:Name="MainContentPresenter" 
-                              Content="{Binding SelectedTab.Content}"
-                              Margin="0"/>
-            
-            <!-- Welcome Screen / Placeholder when no tab is selected -->
-            <Border x:Name="PlaceholderPanel"
-                    Background="{StaticResource DarkCard}">
+            <ContentPresenter Content="{Binding SelectedTab.Content}"/>
+            <Border Background="{StaticResource DarkCard}">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -758,66 +134,18 @@
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-                
-                <!-- Welcome Content -->
-                <StackPanel HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           MaxWidth="400">
-                    <!-- Logo/Icon -->
-                    <Border Width="80" Height="80"
-                           Background="{StaticResource AccentBlue}"
-                           CornerRadius="40"
-                           Margin="0,0,0,24">
-                        <TextBlock Text="API"
-                                  FontSize="18"
-                                  FontWeight="Bold"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Foreground="White"/>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="400">
+                    <Border Width="80" Height="80" Background="{StaticResource AccentBlue}" CornerRadius="40" Margin="0,0,0,24">
+                        <TextBlock Text="API" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
                     </Border>
-                    
-                    <TextBlock Text="Welcome to API Hammer"
-                              FontSize="28"
-                              FontWeight="Light"
-                              HorizontalAlignment="Center"
-                              Foreground="{StaticResource TextPrimary}"
-                              Margin="0,0,0,16"/>
-                    
-                    <TextBlock Text="A powerful API testing tool for modern developers"
-                              FontSize="16"
-                              HorizontalAlignment="Center"
-                              Foreground="{StaticResource TextSecondary}"
-                              TextAlignment="Center"
-                              Margin="0,0,0,24"/>
-                    
-                    <TextBlock Text="Get started by creating a collection and adding requests"
-                              FontSize="14"
-                              HorizontalAlignment="Center"
-                              Foreground="{StaticResource TextMuted}"
-                              TextAlignment="Center"
-                              Margin="0,0,0,32"/>
-                    
-                    <StackPanel Orientation="Horizontal" 
-                               HorizontalAlignment="Center">
-                        <Button Content="Create Collection"
-                               Command="{Binding CreateNewCollectionCommand}"
-                               Style="{StaticResource ModernButtonStyle}"
-                               Margin="0,0,12,0"
-                               Padding="16,8"/>
-                        <Button Content="+ HTTP Request"
-                               Command="{Binding NewHttpTabCommand}"
-                               Style="{StaticResource SecondaryButtonStyle}"
-                               Margin="0,0,8,0"
-                               Padding="16,8"/>
-                        <Button Content="+ WebSocket"
-                               Command="{Binding NewWebSocketTabCommand}"
-                               Style="{StaticResource SecondaryButtonStyle}"
-                               Margin="0,0,8,0"
-                               Padding="16,8"/>
-                        <Button Content="+ gRPC"
-                               Command="{Binding NewGrpcTabCommand}"
-                               Style="{StaticResource SecondaryButtonStyle}"
-                               Padding="16,8"/>
+                    <TextBlock Text="Welcome to API Hammer" FontSize="28" FontWeight="Light" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,16"/>
+                    <TextBlock Text="A powerful API testing tool for modern developers" FontSize="16" HorizontalAlignment="Center" Foreground="{StaticResource TextSecondary}" TextAlignment="Center" Margin="0,0,0,24"/>
+                    <TextBlock Text="Get started by creating a collection and adding requests" FontSize="14" HorizontalAlignment="Center" Foreground="{StaticResource TextMuted}" TextAlignment="Center" Margin="0,0,0,32"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="Create Collection" Command="{Binding CreateNewCollectionCommand}" Style="{StaticResource ModernButtonStyle}" Margin="0,0,12,0" Padding="16,8"/>
+                        <Button Content="+ HTTP Request" Command="{Binding NewHttpTabCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="16,8"/>
+                        <Button Content="+ WebSocket" Command="{Binding NewWebSocketTabCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="16,8"/>
+                        <Button Content="+ gRPC" Command="{Binding NewGrpcTabCommand}" Style="{StaticResource SecondaryButtonStyle}" Padding="16,8"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
