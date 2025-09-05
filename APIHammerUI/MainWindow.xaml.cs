@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using APIHammerUI.ViewModels;
 using System.ComponentModel;
+using APIHammerUI.Models;
 
 namespace APIHammerUI;
 
@@ -71,8 +72,76 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    // Collection context menu handlers
+    private void CollectionMenu_SendAllRequests(object sender, RoutedEventArgs e)
     {
-        // This is now handled by MainWindow_Loaded above
+        if (GetMenuDataContext<TabCollection>(sender) is TabCollection collection && _viewModel.SendAllRequestsCommand.CanExecute(collection))
+        {
+            _viewModel.SendAllRequestsCommand.Execute(collection);
+        }
+    }
+
+    private void CollectionMenu_Rename(object sender, RoutedEventArgs e)
+    {
+        if (GetMenuDataContext<TabCollection>(sender) is TabCollection collection && _viewModel.RenameCollectionMenuCommand is System.Windows.Input.ICommand cmd && cmd.CanExecute(collection))
+        {
+            cmd.Execute(collection);
+        }
+    }
+
+    private void CollectionMenu_Export(object sender, RoutedEventArgs e)
+    {
+        if (GetMenuDataContext<TabCollection>(sender) is TabCollection collection && _viewModel.ExportCollectionMenuCommand is System.Windows.Input.ICommand cmd && cmd.CanExecute(collection))
+        {
+            cmd.Execute(collection);
+        }
+    }
+
+    private void CollectionMenu_Delete(object sender, RoutedEventArgs e)
+    {
+        if (GetMenuDataContext<TabCollection>(sender) is TabCollection collection && _viewModel.DeleteCollectionMenuCommand is System.Windows.Input.ICommand cmd && cmd.CanExecute(collection))
+        {
+            cmd.Execute(collection);
+        }
+    }
+
+    // Tab context menu handlers
+    private void TabMenu_Rename(object sender, RoutedEventArgs e)
+    {
+        if (GetMenuDataContext<RequestTab>(sender) is RequestTab tab && _viewModel.RenameTabMenuCommand is System.Windows.Input.ICommand cmd && cmd.CanExecute(tab))
+        {
+            cmd.Execute(tab);
+        }
+    }
+
+    private void TabMenu_Move(object sender, RoutedEventArgs e)
+    {
+        if (GetMenuDataContext<RequestTab>(sender) is RequestTab tab && _viewModel.MoveTabMenuCommand is System.Windows.Input.ICommand cmd && cmd.CanExecute(tab))
+        {
+            cmd.Execute(tab);
+        }
+    }
+
+    private void TabMenu_Close(object sender, RoutedEventArgs e)
+    {
+        if (GetMenuDataContext<RequestTab>(sender) is RequestTab tab && _viewModel.CloseTabMenuCommand is System.Windows.Input.ICommand cmd && cmd.CanExecute(tab))
+        {
+            cmd.Execute(tab);
+        }
+    }
+
+    private T? GetMenuDataContext<T>(object sender) where T : class
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is T ctx)
+            return ctx;
+        
+        if (sender is MenuItem mi)
+        {
+            // For safety, attempt to pull from PlacementTarget if DataContext not found
+            if (mi.DataContext is T ctx2) return ctx2;
+            if (mi.Parent is ContextMenu cm && cm.PlacementTarget is FrameworkElement pfe && pfe.DataContext is T ctx3)
+                return ctx3;
+        }
+        return null;
     }
 }

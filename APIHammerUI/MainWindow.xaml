@@ -69,12 +69,12 @@
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Send All Requests" Command="{Binding DataContext.SendAllRequestsCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                        <MenuItem Header="Send All Requests" Click="CollectionMenu_SendAllRequests"/>
                                         <Separator />
-                                        <MenuItem Header="Rename Collection" Command="{Binding DataContext.RenameCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                        <MenuItem Header="Export Collection..." Command="{Binding DataContext.ExportCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                        <MenuItem Header="Rename Collection" Click="CollectionMenu_Rename"/>
+                                        <MenuItem Header="Export Collection..." Click="CollectionMenu_Export"/>
                                         <Separator />
-                                        <MenuItem Header="Delete Collection" Command="{Binding DataContext.DeleteCollectionMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                        <MenuItem Header="Delete Collection" Click="CollectionMenu_Delete"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <materialIcons:MaterialIcon Kind="Group" Margin="0,0,6,0" Foreground="{StaticResource AccentBlue}"/>
@@ -86,10 +86,10 @@
                                     <StackPanel Orientation="Horizontal" Margin="0,2">
                                         <StackPanel.ContextMenu>
                                             <ContextMenu>
-                                                <MenuItem Header="Rename" Command="{Binding DataContext.RenameTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                                <MenuItem Header="Move to Collection..." Command="{Binding DataContext.MoveTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                <MenuItem Header="Rename" Click="TabMenu_Rename"/>
+                                                <MenuItem Header="Move to Collection..." Click="TabMenu_Move"/>
                                                 <Separator />
-                                                <MenuItem Header="Close" Command="{Binding DataContext.CloseTabMenuCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                <MenuItem Header="Close" Click="TabMenu_Close"/>
                                             </ContextMenu>
                                         </StackPanel.ContextMenu>
                                         <Border Background="{Binding RequestType, Converter={StaticResource RequestTypeColorConverter}}" CornerRadius="3" Padding="6,2" Margin="0,0,8,0">
@@ -127,6 +127,7 @@
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
+                        <Setter Property="Background" Value="{StaticResource DarkCard}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding SelectedTab}" Value="{x:Null}">
                                 <Setter Property="Visibility" Value="Visible"/>
