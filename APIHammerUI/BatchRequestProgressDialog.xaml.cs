@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using APIHammerUI.Helpers;
 using APIHammerUI.Models;
 using APIHammerUI.Services;
 

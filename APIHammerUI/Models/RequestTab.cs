@@ -1,4 +1,5 @@
 using System;
+using APIHammerUI.Helpers;
 using System.ComponentModel;
 
 namespace APIHammerUI.Models;
@@ -10,7 +11,7 @@ public enum RequestType
     gRPC
 }
 
-public class RequestTab : INotifyPropertyChanged
+public class RequestTab : ObservableObject
 {
     private string _name = "New Request";
     private RequestType _requestType = RequestType.HTTP;
@@ -57,11 +58,4 @@ public class RequestTab : INotifyPropertyChanged
     }
 
     public object? Content { get; set; }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }

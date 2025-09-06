@@ -1,8 +1,9 @@
+using APIHammerUI.Helpers;
 using System.ComponentModel;
 
 namespace APIHammerUI.Models;
 
-public class GrpcRequest : INotifyPropertyChanged
+public class GrpcRequest : ObservableObject
 {
     private string _server = "";
     private string _service = "";
@@ -69,12 +70,5 @@ public class GrpcRequest : INotifyPropertyChanged
             _isLoading = value;
             OnPropertyChanged(nameof(IsLoading));
         }
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

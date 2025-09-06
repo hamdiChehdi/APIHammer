@@ -11,10 +11,11 @@ using APIHammerUI.Services;
 using APIHammerUI.Commands;
 using System.Text;
 using System.Runtime.CompilerServices;
+using APIHammerUI.Helpers;
 
 namespace APIHammerUI.ViewModels;
 
-public class MainWindowViewModel : INotifyPropertyChanged
+public class MainWindowViewModel : ObservableObject
 {
     private readonly DatabaseService _databaseService;
     private readonly PersistenceManagerService _persistenceManager;
@@ -631,23 +632,5 @@ public class MainWindowViewModel : INotifyPropertyChanged
         {
             System.Diagnostics.Debug.WriteLine($"Error during shutdown: {ex}");
         }
-    }
-
-    // INotifyPropertyChanged implementation
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    protected virtual bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (Equals(field, value))
-            return false;
-
-        field = value;
-        OnPropertyChanged(propertyName);
-        return true;
     }
 }

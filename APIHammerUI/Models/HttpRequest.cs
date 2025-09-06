@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using APIHammerUI.Helpers;
 
 namespace APIHammerUI.Models;
 
@@ -17,7 +18,7 @@ public enum AuthenticationType
     ApiKey
 }
 
-public class AuthenticationSettings : INotifyPropertyChanged
+public class AuthenticationSettings : ObservableObject
 {
     private AuthenticationType _type = AuthenticationType.None;
     private string _username = "";
@@ -85,16 +86,9 @@ public class AuthenticationSettings : INotifyPropertyChanged
             OnPropertyChanged(nameof(ApiKeyValue));
         }
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }
 
-public class HttpHeaderItem : INotifyPropertyChanged
+public class HttpHeaderItem : ObservableObject
 {
     private string _key = "";
     private string _value = "";
@@ -129,16 +123,9 @@ public class HttpHeaderItem : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsEnabled));
         }
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }
 
-public class HttpQueryParameter : INotifyPropertyChanged
+public class HttpQueryParameter : ObservableObject
 {
     private string _key = "";
     private string _value = "";
@@ -173,16 +160,9 @@ public class HttpQueryParameter : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsEnabled));
         }
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }
 
-public class HttpRequest : INotifyPropertyChanged
+public class HttpRequest : ObservableObject
 {
     public Guid Id { get; } = Guid.NewGuid();
     // Streaming chunks (incremental, used to display while downloading)
@@ -447,11 +427,4 @@ public class HttpRequest : INotifyPropertyChanged
         AuthenticationType.BearerToken, 
         AuthenticationType.ApiKey 
     };
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }

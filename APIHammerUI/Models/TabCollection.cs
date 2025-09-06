@@ -1,10 +1,10 @@
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using APIHammerUI.Helpers;
 
 namespace APIHammerUI.Models;
 
-public class TabCollection : INotifyPropertyChanged
+public class TabCollection : ObservableObject
 {
     private string _name = "New Collection";
 
@@ -32,11 +32,4 @@ public class TabCollection : INotifyPropertyChanged
     }
 
     public ObservableCollection<RequestTab> Tabs { get; set; } = new();
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }

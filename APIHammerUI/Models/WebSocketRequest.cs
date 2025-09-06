@@ -1,9 +1,9 @@
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using APIHammerUI.Helpers;
 
 namespace APIHammerUI.Models;
 
-public class WebSocketRequest : INotifyPropertyChanged
+public class WebSocketRequest : ObservableObject
 {
     private string _url = "";
     private string _message = "";
@@ -74,11 +74,4 @@ public class WebSocketRequest : INotifyPropertyChanged
     public ObservableCollection<HttpHeaderItem> Headers { get; set; }
 
     public string ConnectButtonText => IsConnecting ? "Connecting..." : (IsConnected ? "Disconnect" : "Connect");
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }
