@@ -1,17 +1,18 @@
+using APIHammerUI.Models;
+using APIHammerUI.Services;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using APIHammerUI.Models;
-using APIHammerUI.Services;
-using Microsoft.Win32;
 
 namespace APIHammerUI.ViewModels;
 
@@ -305,8 +306,40 @@ public class HttpRequestViewModel : INotifyPropertyChanged, IDisposable
     #endregion // Command Implementations
 
     // Helper methods
+
+    private static Dictionary<string, List<string>>? _headerValueSuggestions;
+
+    public static Dictionary<string, List<string>> HeaderValueSuggestions
+    {
+        get
+        {
+            if (_headerValueSuggestions == null)
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                if (assembly is null)
+                {
+                    throw new Exception("Can't load ExecutingAssembly ");
+                }
+                using (Stream? stream = assembly.GetManifestResourceStream("APIHammerUI.Resources.HttpHeaderSuggestions.json"))
+                {
+                    if (stream == null)
+                    {
+                        throw new Exception("Resource file 'HttpHeaderSuggestions.json' not found in embedded resources.");
+                    }
+
+                    using (StreamReader reader = new StreamReader(stream))
+                    {
+                        string jsonContent = reader.ReadToEnd();
+                        _headerValueSuggestions = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(jsonContent);
+                    }
+                }
+            }
+            return _headerValueSuggestions!;
+        }
+    }
+
     private string GetDefaultValueForHeader(string headerName)
-        => HttpRequest.HeaderValueSuggestions.TryGetValue(headerName, out var suggestions) && suggestions.Any() ? suggestions.First() : headerName switch
+        => HeaderValueSuggestions.TryGetValue(headerName, out var suggestions) && suggestions.Any() ? suggestions.First() : headerName switch
         {
             "Content-Type" => "application/json",
             "Accept" => "application/json",

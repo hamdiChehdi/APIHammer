@@ -8,8 +8,9 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Resource\apiHammer.ico</ApplicationIcon>
   </PropertyGroup>
-
+  
   <ItemGroup>
+    <EmbeddedResource Include="Resources\*.json" />
     <Resource Include="Resource\apiHammer.ico" />
   </ItemGroup>
 

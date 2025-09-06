@@ -1,8 +1,11 @@
-using System.ComponentModel;
-using System.Collections.ObjectModel;
-using System.Collections.Generic;
-using System.Linq;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text.Json;
 
 namespace APIHammerUI.Models;
 
@@ -443,69 +446,6 @@ public class HttpRequest : INotifyPropertyChanged
         AuthenticationType.BasicAuth, 
         AuthenticationType.BearerToken, 
         AuthenticationType.ApiKey 
-    };
-
-    // Header values suggestions based on header name
-    public static Dictionary<string, List<string>> HeaderValueSuggestions { get; } = new Dictionary<string, List<string>>
-    {
-        ["Content-Type"] = new List<string>
-        {
-            "application/json",
-            "application/xml",
-            "application/x-www-form-urlencoded",
-            "multipart/form-data",
-            "text/plain",
-            "text/html",
-            "text/css",
-            "text/javascript",
-            "image/jpeg",
-            "image/png",
-            "image/gif",
-            "application/pdf",
-            "application/octet-stream"
-        },
-        ["Accept"] = new List<string>
-        {
-            "application/json",
-            "application/xml",
-            "text/html",
-            "text/plain",
-            "*/*"
-        },
-        ["Accept-Encoding"] = new List<string>
-        {
-            "gzip",
-            "deflate",
-            "br",
-            "gzip, deflate",
-            "gzip, deflate, br"
-        },
-        ["Cache-Control"] = new List<string>
-        {
-            "no-cache",
-            "no-store",
-            "max-age=3600",
-            "must-revalidate",
-            "public",
-            "private"
-        },
-        ["Connection"] = new List<string>
-        {
-            "keep-alive",
-            "close"
-        },
-        ["Access-Control-Allow-Methods"] = new List<string>
-        {
-            "GET, POST, PUT, DELETE",
-            "GET, POST, OPTIONS",
-            "*"
-        },
-        ["Access-Control-Allow-Headers"] = new List<string>
-        {
-            "Content-Type, Authorization",
-            "Content-Type, X-Requested-With",
-            "*"
-        }
     };
 
     public event PropertyChangedEventHandler? PropertyChanged;

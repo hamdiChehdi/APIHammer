@@ -1,0 +1,53 @@
+{
+  "Content-Type": [
+    "application/json",
+    "application/xml",
+    "application/x-www-form-urlencoded",
+    "multipart/form-data",
+    "text/plain",
+    "text/html",
+    "text/css",
+    "text/javascript",
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "application/pdf",
+    "application/octet-stream"
+  ],
+  "Accept": [
+    "application/json",
+    "application/xml",
+    "text/html",
+    "text/plain",
+    "*/*"
+  ],
+  "Accept-Encoding": [
+    "gzip",
+    "deflate",
+    "br",
+    "gzip, deflate",
+    "gzip, deflate, br"
+  ],
+  "Cache-Control": [
+    "no-cache",
+    "no-store",
+    "max-age=3600",
+    "must-revalidate",
+    "public",
+    "private"
+  ],
+  "Connection": [
+    "keep-alive",
+    "close"
+  ],
+  "Access-Control-Allow-Methods": [
+    "GET, POST, PUT, DELETE",
+    "GET, POST, OPTIONS",
+    "*"
+  ],
+  "Access-Control-Allow-Headers": [
+    "Content-Type, Authorization",
+    "Content-Type, X-Requested-With",
+    "*"
+  ]
+}
