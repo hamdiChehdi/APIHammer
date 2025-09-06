@@ -190,7 +190,7 @@ public class HttpRequestService
         }
     }
 
-    private HttpRequestMessage? BuildRequest(HttpRequest httpRequest)
+    private static HttpRequestMessage? BuildRequest(HttpRequest httpRequest)
     {
         if (!Uri.TryCreate(httpRequest.FullUrl, UriKind.Absolute, out var uri))
             return null;
