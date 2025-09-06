@@ -6,12 +6,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon>Resource\apiHammer.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\apiHammer.ico</ApplicationIcon>
   </PropertyGroup>
   
   <ItemGroup>
     <EmbeddedResource Include="Resources\*.json" />
-    <Resource Include="Resource\apiHammer.ico" />
+    <Resource Include="Resources\apiHammer.ico" />
   </ItemGroup>
 
   <ItemGroup>
