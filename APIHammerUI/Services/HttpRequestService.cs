@@ -22,20 +22,20 @@ public class HttpRequestResult
 
 public class HttpRequestService
 {
+    // Unlimited timeout for very large / long running responses. User still can cancel via cancellation token.
     private static readonly HttpClient httpClient = new HttpClient()
     {
-        MaxResponseContentBufferSize = 10 * 1024 * 1024, // 10MB limit
-        Timeout = TimeSpan.FromMinutes(5) // 5 minute timeout
+        Timeout = System.Threading.Timeout.InfiniteTimeSpan
     };
 
     static HttpRequestService()
     {
-        // Configure HttpClient for better performance
-        httpClient.DefaultRequestHeaders.Add("User-Agent", "APIHammer/1.0");
+        if (!httpClient.DefaultRequestHeaders.Contains("User-Agent"))
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "APIHammer/1.0");
     }
 
     /// <summary>
-    /// Sends an HTTP request and returns the result
+    /// Sends an HTTP request and returns the result (no artificial response size limit).
     /// </summary>
     public async Task<HttpRequestResult> SendRequestAsync(HttpRequest httpRequest, CancellationToken cancellationToken = default)
     {
@@ -45,10 +45,111 @@ public class HttpRequestService
         try
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            request = new HttpRequestMessage();
-            
-            // Set method
-            request.Method = httpRequest.Method switch
+            request = BuildRequest(httpRequest);
+            if (request == null)
+            {
+                return new HttpRequestResult { Success = false, ErrorMessage = "Invalid URL format.", RequestDateTime = DateTime.Now };
+            }
+            response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            stopwatch.Stop();
+            var headers = BuildResponseHeaders(response, request, httpRequest);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var formatted = await FormatResponseContentAsync(body, response).ConfigureAwait(false);
+            var full = headers + formatted;
+            return new HttpRequestResult
+            {
+                Success = true,
+                Response = full,
+                ResponseTime = stopwatch.Elapsed,
+                ResponseSize = Encoding.UTF8.GetByteCount(body),
+                RequestDateTime = DateTime.Now
+            };
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return new HttpRequestResult { Success = false, ErrorMessage = "Request was cancelled", Response = "Request was cancelled.", RequestDateTime = DateTime.Now };
+        }
+        catch (Exception ex)
+        {
+            return new HttpRequestResult { Success = false, ErrorMessage = ex.Message, Response = $"Error: {ex.Message}\n\nRequest URL: {httpRequest.FullUrl}", RequestDateTime = DateTime.Now };
+        }
+        finally
+        {
+            response?.Dispose();
+            request?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Streaming request that invokes callbacks for header and content chunks.
+    /// </summary>
+    public async Task<HttpRequestResult> SendRequestStreamingAsync(
+        HttpRequest httpRequest,
+        Action<string>? onHeaders,
+        Action<string>? onChunk,
+        CancellationToken cancellationToken = default)
+    {
+        HttpRequestMessage? request = null;
+        HttpResponseMessage? response = null;
+        var fullBodyBuilder = new StringBuilder();
+        try
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            request = BuildRequest(httpRequest);
+            if (request == null)
+            {
+                return new HttpRequestResult { Success = false, ErrorMessage = "Invalid URL format." };
+            }
+            response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            var headerText = BuildResponseHeaders(response, request, httpRequest);
+            onHeaders?.Invoke(headerText);
+
+            // Stream body
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 16 * 1024);
+            var buffer = new char[16 * 1024];
+            int read;
+            while ((read = await reader.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
+            {
+                var slice = new string(buffer, 0, read);
+                fullBodyBuilder.Append(slice);
+                onChunk?.Invoke(slice);
+            }
+            stopwatch.Stop();
+            var fullBody = fullBodyBuilder.ToString();
+            var maybeFormatted = await FormatResponseContentAsync(fullBody, response).ConfigureAwait(false);
+            var fullResponse = headerText + maybeFormatted;
+            return new HttpRequestResult
+            {
+                Success = true,
+                Response = fullResponse,
+                ResponseTime = stopwatch.Elapsed,
+                ResponseSize = Encoding.UTF8.GetByteCount(fullBody),
+                RequestDateTime = DateTime.Now
+            };
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return new HttpRequestResult { Success = false, ErrorMessage = "Request was cancelled", Response = "Request was cancelled." };
+        }
+        catch (Exception ex)
+        {
+            return new HttpRequestResult { Success = false, ErrorMessage = ex.Message, Response = $"Error: {ex.Message}\n\nRequest URL: {httpRequest.FullUrl}" };
+        }
+        finally
+        {
+            response?.Dispose();
+            request?.Dispose();
+        }
+    }
+
+    private HttpRequestMessage? BuildRequest(HttpRequest httpRequest)
+    {
+        if (!Uri.TryCreate(httpRequest.FullUrl, UriKind.Absolute, out var uri))
+            return null;
+        var request = new HttpRequestMessage
+        {
+            Method = httpRequest.Method switch
             {
                 "GET" => HttpMethod.Get,
                 "POST" => HttpMethod.Post,
@@ -58,139 +159,35 @@ public class HttpRequestService
                 "HEAD" => HttpMethod.Head,
                 "OPTIONS" => HttpMethod.Options,
                 _ => HttpMethod.Get
-            };
-
-            // Use the FullUrl which includes query parameters
-            if (!Uri.TryCreate(httpRequest.FullUrl, UriKind.Absolute, out var uri))
-            {
-                return new HttpRequestResult
-                {
-                    Success = false,
-                    ErrorMessage = "Invalid URL format. Please check your base URL and query parameters.",
-                    RequestDateTime = DateTime.Now
-                };
-            }
-
-            request.RequestUri = uri;
-
-            // Apply authentication
-            ApplyAuthentication(request, httpRequest.Authentication);
-
-            // Set headers from the dynamic header collection
-            foreach (var headerItem in httpRequest.Headers.Where(h => h.IsEnabled && !string.IsNullOrWhiteSpace(h.Key)))
-            {
-                try
-                {
-                    // Skip Authorization header if it's already set by authentication
-                    if (headerItem.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) && 
-                        (httpRequest.Authentication.Type == AuthenticationType.BasicAuth || 
-                         httpRequest.Authentication.Type == AuthenticationType.BearerToken))
-                        continue;
-
-                    // Try to add to request headers first
-                    request.Headers.TryAddWithoutValidation(headerItem.Key, headerItem.Value);
-                }
-                catch
-                {
-                    // If it fails, it might be a content header, we'll handle it after creating content
-                }
-            }
-
-            // Set body
-            if (!string.IsNullOrWhiteSpace(httpRequest.Body) && 
-                (httpRequest.Method == "POST" || httpRequest.Method == "PUT" || httpRequest.Method == "PATCH"))
-            {
-                // Determine content type from headers or default to JSON
-                var contentType = httpRequest.Headers
-                    .FirstOrDefault(h => h.IsEnabled && h.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
-                    ?.Value ?? "application/json";
-
-                request.Content = new StringContent(httpRequest.Body, Encoding.UTF8, contentType);
-
-                // Add content-specific headers
-                foreach (var headerItem in httpRequest.Headers.Where(h => h.IsEnabled && !string.IsNullOrWhiteSpace(h.Key)))
-                {
-                    if (IsContentHeader(headerItem.Key))
-                    {
-                        try
-                        {
-                            request.Content.Headers.TryAddWithoutValidation(headerItem.Key, headerItem.Value);
-                        }
-                        catch
-                        {
-                            // Ignore invalid content headers
-                        }
-                    }
-                }
-            }
-
-            // Send the request - this is the main async operation
-            response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-            stopwatch.Stop();
-
-            // Build response headers
-            var responseHeaders = BuildResponseHeaders(response, request, httpRequest);
-
-            // Check response size first
-            var contentLength = response.Content.Headers.ContentLength;
-            const int maxResponseSize = 10 * 1024 * 1024; // 10MB
-            
-            if (contentLength.HasValue && contentLength.Value > maxResponseSize)
-            {
-                return new HttpRequestResult
-                {
-                    Success = false,
-                    ErrorMessage = "Response too large",
-                    Response = responseHeaders + 
-                        $"\nResponse too large ({contentLength.Value / (1024 * 1024):F1} MB). " +
-                        "Maximum supported size is 10 MB.",
-                    ResponseTime = stopwatch.Elapsed,
-                    ResponseSize = contentLength.Value,
-                    RequestDateTime = DateTime.Now
-                };
-            }
-
-            // Read response content - ensure this doesn't block UI
-            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            var formattedContent = await FormatResponseContentAsync(responseContent, response).ConfigureAwait(false);
-
-            var fullResponse = responseHeaders + formattedContent;
-
-            return new HttpRequestResult
-            {
-                Success = true,
-                Response = fullResponse,
-                ResponseTime = stopwatch.Elapsed,
-                ResponseSize = Encoding.UTF8.GetByteCount(responseContent),
-                RequestDateTime = DateTime.Now
-            };
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            },
+            RequestUri = uri
+        };
+        ApplyAuthentication(request, httpRequest.Authentication);
+        foreach (var headerItem in httpRequest.Headers.Where(h => h.IsEnabled && !string.IsNullOrWhiteSpace(h.Key)))
         {
-            return new HttpRequestResult
-            {
-                Success = false,
-                ErrorMessage = "Request was cancelled",
-                Response = "Request was cancelled.",
-                RequestDateTime = DateTime.Now
-            };
+            // Skip Authorization header if it's already set by authentication
+            if (headerItem.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) && 
+                (httpRequest.Authentication.Type == AuthenticationType.BasicAuth || 
+                 httpRequest.Authentication.Type == AuthenticationType.BearerToken))
+                continue;
+
+            // Try to add to request headers first
+            request.Headers.TryAddWithoutValidation(headerItem.Key, headerItem.Value);
         }
-        catch (Exception ex)
+
+        // Set body
+        if (!string.IsNullOrWhiteSpace(httpRequest.Body) && 
+            (httpRequest.Method == "POST" || httpRequest.Method == "PUT" || httpRequest.Method == "PATCH"))
         {
-            return new HttpRequestResult
-            {
-                Success = false,
-                ErrorMessage = ex.Message,
-                Response = $"Error: {ex.Message}\n\nRequest URL: {httpRequest.FullUrl}",
-                RequestDateTime = DateTime.Now
-            };
+            // Determine content type from headers or default to JSON
+            var contentType = httpRequest.Headers
+                .FirstOrDefault(h => h.IsEnabled && h.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+                ?.Value ?? "application/json";
+
+            request.Content = new StringContent(httpRequest.Body, Encoding.UTF8, contentType);
         }
-        finally
-        {
-            // Dispose resources
-            response?.Dispose();
-            request?.Dispose();
-        }
+
+        return request;
     }
 
     private static void ApplyAuthentication(HttpRequestMessage request, AuthenticationSettings auth)
