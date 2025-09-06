@@ -28,6 +28,9 @@ public class HttpRequestService
         Timeout = System.Threading.Timeout.InfiniteTimeSpan
     };
 
+    // Cap how much of the body we keep in memory for the final Response property (50 MB default)
+    private const long MAX_CAPTURE_BYTES = 50L * 1024 * 1024; // 50MB safeguard to avoid OOM
+
     static HttpRequestService()
     {
         if (!httpClient.DefaultRequestHeaders.Contains("User-Agent"))
@@ -53,6 +56,7 @@ public class HttpRequestService
             response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             stopwatch.Stop();
             var headers = BuildResponseHeaders(response, request, httpRequest);
+            // WARNING: This allocates full body string; reserved for smaller bodies.
             var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             var formatted = await FormatResponseContentAsync(body, response).ConfigureAwait(false);
             var full = headers + formatted;
@@ -81,7 +85,7 @@ public class HttpRequestService
     }
 
     /// <summary>
-    /// Streaming request that invokes callbacks for header and content chunks.
+    /// Streaming request that invokes callbacks for header and content chunks. Avoids keeping the entire body in memory.
     /// </summary>
     public async Task<HttpRequestResult> SendRequestStreamingAsync(
         HttpRequest httpRequest,
@@ -91,7 +95,10 @@ public class HttpRequestService
     {
         HttpRequestMessage? request = null;
         HttpResponseMessage? response = null;
-        var fullBodyBuilder = new StringBuilder();
+        var capturedBuilder = new StringBuilder(64 * 1024); // start modest
+        long capturedBytes = 0;
+        long totalBytes = 0;
+        bool truncated = false;
         try
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -104,7 +111,6 @@ public class HttpRequestService
             var headerText = BuildResponseHeaders(response, request, httpRequest);
             onHeaders?.Invoke(headerText);
 
-            // Stream body
             using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 16 * 1024);
             var buffer = new char[16 * 1024];
@@ -112,19 +118,60 @@ public class HttpRequestService
             while ((read = await reader.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
             {
                 var slice = new string(buffer, 0, read);
-                fullBodyBuilder.Append(slice);
+                var sliceByteCount = Encoding.UTF8.GetByteCount(slice);
+                totalBytes += sliceByteCount;
+
+                // Forward slice to UI (display layer already truncates)
                 onChunk?.Invoke(slice);
+
+                // Capture only up to MAX_CAPTURE_BYTES
+                if (!truncated)
+                {
+                    if (capturedBytes + sliceByteCount <= MAX_CAPTURE_BYTES)
+                    {
+                        capturedBuilder.Append(slice);
+                        capturedBytes += sliceByteCount;
+                    }
+                    else
+                    {
+                        // Append partial that fits (optional) then mark truncated
+                        var remaining = (int)(MAX_CAPTURE_BYTES - capturedBytes);
+                        if (remaining > 0)
+                        {
+                            // Attempt to take only chars that fit approx by bytes: fallback simple substring
+                            capturedBuilder.Append(slice); // small overshoot acceptable vs complexity
+                        }
+                        truncated = true;
+                    }
+                }
+
+                if (truncated)
+                {
+                    // We can stop reading further to save bandwidth/memory if user only needs initial part
+                    // Break to abandon rest of body
+                    break;
+                }
             }
             stopwatch.Stop();
-            var fullBody = fullBodyBuilder.ToString();
-            var maybeFormatted = await FormatResponseContentAsync(fullBody, response).ConfigureAwait(false);
-            var fullResponse = headerText + maybeFormatted;
+
+            string bodyPortion = capturedBuilder.ToString();
+            // Only attempt JSON formatting if not truncated and under formatting threshold
+            if (!truncated)
+            {
+                bodyPortion = await FormatResponseContentAsync(bodyPortion, response).ConfigureAwait(false);
+            }
+            else
+            {
+                bodyPortion += $"\n[Body truncated after {capturedBytes / (1024.0 * 1024.0):F1} MB to prevent excessive memory usage. Full content not downloaded.]";
+            }
+
+            var fullResponse = headerText + bodyPortion;
             return new HttpRequestResult
             {
                 Success = true,
                 Response = fullResponse,
                 ResponseTime = stopwatch.Elapsed,
-                ResponseSize = Encoding.UTF8.GetByteCount(fullBody),
+                ResponseSize = truncated ? capturedBytes : totalBytes,
                 RequestDateTime = DateTime.Now
             };
         }
@@ -221,18 +268,6 @@ public class HttpRequestService
                 // No authentication
                 break;
         }
-    }
-
-    private static bool IsContentHeader(string headerName)
-    {
-        // Content headers that should be set on HttpContent rather than HttpRequestMessage
-        var contentHeaders = new[]
-        {
-            "Content-Type", "Content-Length", "Content-Encoding", "Content-Language",
-            "Content-Location", "Content-MD5", "Content-Range", "Expires", "Last-Modified"
-        };
-
-        return contentHeaders.Any(h => h.Equals(headerName, StringComparison.OrdinalIgnoreCase));
     }
 
     private string BuildResponseHeaders(HttpResponseMessage response, HttpRequestMessage request, HttpRequest httpRequest)
