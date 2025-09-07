@@ -9,6 +9,7 @@ using Microsoft.Win32;
 using Grpc.Net.Client;
 using System.Text.Json;
 using System.Collections.Generic;
+using Grpc.Core;
 
 namespace APIHammerUI.Views;
 
@@ -34,21 +35,26 @@ public partial class GrpcRequestView : UserControl
             grpcRequest.ProtoFilePath = dlg.FileName;
             try
             {
-                var services = ProtoSimpleParser.ExtractServices(File.ReadAllText(dlg.FileName));
-                grpcRequest.SetServices(services.Select(s => s.Name));
-                grpcRequest.SetMethods(Array.Empty<string>());
-                grpcRequest.Service = services.FirstOrDefault()?.Name ?? string.Empty;
-                if (!string.IsNullOrEmpty(grpcRequest.Service))
-                {
-                    var first = services.First(s => s.Name == grpcRequest.Service);
-                    grpcRequest.SetMethods(first.Methods.Select(m => m.Name));
-                    grpcRequest.Method = first.Methods.FirstOrDefault()?.Name ?? string.Empty;
-                }
+                LoadProto(grpcRequest, File.ReadAllText(dlg.FileName));
             }
             catch (Exception ex)
             {
                 grpcRequest.Response = $"Failed to parse proto: {ex.Message}";
             }
+        }
+    }
+
+    private void LoadProto(GrpcRequest grpcRequest, string protoContent)
+    {
+        var services = ProtoSimpleParser.ExtractServices(protoContent);
+        grpcRequest.SetServices(services.Select(s => s.Name));
+        grpcRequest.SetMethods(Array.Empty<string>());
+        grpcRequest.Service = services.FirstOrDefault()?.Name ?? string.Empty;
+        if (!string.IsNullOrEmpty(grpcRequest.Service))
+        {
+            var first = services.First(s => s.Name == grpcRequest.Service);
+            grpcRequest.SetMethods(first.Methods.Select(m => m.Name));
+            grpcRequest.Method = first.Methods.FirstOrDefault()?.Name ?? string.Empty;
         }
     }
 
@@ -68,20 +74,21 @@ public partial class GrpcRequestView : UserControl
                 throw new InvalidOperationException("Service and Method are required");
 
             using var channel = GrpcChannel.ForAddress(grpcRequest.Server);
-            // Dynamic invocation of arbitrary gRPC methods is non-trivial without compiled descriptors.
-            // Here we just echo planned invocation. In a future iteration we could integrate Grpc.Reflection
-            // or compile the proto on the fly using protobuf-net.Reflection.
-
-            await Task.Delay(400); // simulate latency
+            await Task.Delay(300); // placeholder latency
 
             grpcRequest.Response = JsonSerializer.Serialize(new
             {
-                info = "Invocation placeholder",
+                info = "Placeholder - real dynamic invocation not yet implemented",
                 server = grpcRequest.Server,
                 service = grpcRequest.Service,
                 method = grpcRequest.Method,
-                request = TryParseJson(grpcRequest.Request),
-                note = "For full dynamic gRPC, integrate protobuf-net.Reflection to compile descriptors at runtime, then use CallInvoker async methods"
+                requestJson = TryParseJson(grpcRequest.Request),
+                guidance = new[]
+                {
+                    "To fully implement dynamic calls you need to compile the proto into descriptors",
+                    "Then build Method<TReq,TRes> with real protobuf serializers",
+                    "Serialize request using descriptors, invoke via CallInvoker.AsyncUnaryCall"
+                }
             }, new JsonSerializerOptions { WriteIndented = true });
         }
         catch (Exception ex)
@@ -97,14 +104,11 @@ public partial class GrpcRequestView : UserControl
     private static object? TryParseJson(string json)
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
-        try
-        {
-            return JsonSerializer.Deserialize<JsonElement>(json);
-        }
-        catch { return json; }
+        try { return JsonSerializer.Deserialize<JsonElement>(json); } catch { return json; }
     }
 }
 
+#region Proto parsing helpers
 internal record ProtoService(string Name, List<ProtoMethod> Methods);
 internal record ProtoMethod(string Name, string InputType, string OutputType, bool ClientStreaming, bool ServerStreaming);
 
@@ -132,7 +136,6 @@ internal static class ProtoSimpleParser
             }
             else if (current != null && line.StartsWith("rpc "))
             {
-                // rpc MethodName (Input) returns (Output);
                 try
                 {
                     var afterRpc = line.Substring(4).Trim();
@@ -163,3 +166,4 @@ internal static class ProtoSimpleParser
         return services;
     }
 }
+#endregion
