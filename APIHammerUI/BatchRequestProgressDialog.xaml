@@ -1,7 +1,11 @@
 <Window x:Class="APIHammerUI.BatchRequestProgressDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Sending Collection Requests" 
+        xmlns:vm="clr-namespace:APIHammerUI.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="{Binding TitleText}"
         Height="460" Width="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
@@ -23,7 +27,7 @@
                 Padding="20,16">
             <StackPanel>
                 <TextBlock x:Name="TitleTextBlock"
-                           Text="Sending Collection Requests"
+                           Text="{Binding TitleText}"
                            FontSize="18"
                            FontWeight="Medium"
                            Foreground="{StaticResource TextPrimary}"/>
@@ -45,7 +49,7 @@
             <StackPanel Margin="16">
                 <!-- Overall Progress -->
                 <TextBlock x:Name="OverallProgressTextBlock"
-                           Text="Preparing requests..."
+                           Text="{Binding OverallProgressText}"
                            FontSize="14"
                            FontWeight="Medium"
                            Foreground="{StaticResource TextPrimary}"
@@ -55,7 +59,9 @@
                              Height="8"
                              Background="{StaticResource DarkPanel}"
                              Foreground="{StaticResource AccentBlue}"
-                             Margin="0,0,0,16"/>
+                             Margin="0,0,0,16"
+                             Minimum="0" Maximum="100"
+                             Value="{Binding OverallProgress}"/>
 
                 <!-- Current Request -->
                 <TextBlock Text="Current Request:"
@@ -65,7 +71,21 @@
                            Margin="0,0,0,4"/>
                 
                 <TextBlock x:Name="CurrentRequestTextBlock"
-                           Text="Initializing..."
+                           Text="{Binding CurrentRequestText}"
+                           FontSize="13"
+                           Foreground="{StaticResource TextPrimary}"
+                           Margin="0,0,0,16"/>
+
+                <!-- Elapsed Time -->
+                <TextBlock x:Name="ElapsedTimeTextBlock"
+                           Text="{Binding ElapsedTimeText}"
+                           FontSize="13"
+                           Foreground="{StaticResource TextPrimary}"
+                           Margin="0,0,0,16"/>
+
+                <!-- Status Text -->
+                <TextBlock x:Name="StatusTextBlock"
+                           Text="{Binding StatusText}"
                            FontSize="13"
                            Foreground="{StaticResource TextPrimary}"
                            Margin="0,0,0,16"/>
@@ -83,7 +103,7 @@
                                    FontSize="11"
                                    Foreground="{StaticResource TextMuted}"/>
                         <TextBlock x:Name="TotalRequestsTextBlock"
-                                   Text="0"
+                                   Text="{Binding TotalRequests}"
                                    FontSize="16"
                                    FontWeight="Bold"
                                    Foreground="{StaticResource AccentBlue}"/>
@@ -94,10 +114,10 @@
                                    FontSize="11"
                                    Foreground="{StaticResource TextMuted}"/>
                         <TextBlock x:Name="CompletedRequestsTextBlock"
-                                   Text="0"
+                                   Text="{Binding CompletedRequests}"
                                    FontSize="16"
                                    FontWeight="Bold"
-                                   Foreground="{StaticResource SuccessGreen}"/>
+                                   Foreground="{StaticResource AccentBlue}"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2">
@@ -105,52 +125,33 @@
                                    FontSize="11"
                                    Foreground="{StaticResource TextMuted}"/>
                         <TextBlock x:Name="FailedRequestsTextBlock"
-                                   Text="0"
+                                   Text="{Binding FailedRequests}"
                                    FontSize="16"
                                    FontWeight="Bold"
-                                   Foreground="{StaticResource ErrorRed}"/>
+                                   Foreground="{StaticResource AccentBlue}"/>
                     </StackPanel>
                 </Grid>
-
-                <!-- Elapsed Time -->
-                <TextBlock x:Name="ElapsedTimeTextBlock"
-                           Text="Elapsed: 00:00"
-                           FontSize="12"
-                           Foreground="{StaticResource TextMuted}"
-                           HorizontalAlignment="Center"
-                           Margin="0,16,0,0"/>
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Status Message -->
-        <Border Grid.Row="2"
+        <!-- Footer -->
+        <Border Grid.Row="3" 
                 Background="{StaticResource DarkPanel}"
                 BorderBrush="{StaticResource DarkBorder}"
-                BorderThickness="0,1,0,1"
-                Padding="20,12">
-            <TextBlock x:Name="StatusTextBlock"
-                       Text="Initializing batch request operation..."
-                       FontSize="12"
-                       Foreground="{StaticResource TextSecondary}"/>
-        </Border>
-
-        <!-- Buttons -->
-        <Border Grid.Row="3"
-                Background="{StaticResource DarkCard}"
+                BorderThickness="1,0,0,0"
                 Padding="20,16">
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button x:Name="CancelButton"
                         Content="Cancel"
                         Style="{StaticResource ModernButtonStyle}"
                         Background="{StaticResource ErrorRed}"
-                        Click="CancelButton_Click"
+                        Command="{Binding CancelCommand}"
                         Margin="0,0,12,0"/>
                 <Button x:Name="CloseButton"
                         Content="Close"
                         Style="{StaticResource ModernButtonStyle}"
-                        Click="CloseButton_Click"
-                        IsEnabled="False"/>
+                        Command="{Binding CloseCommand}"
+                        IsEnabled="{Binding IsCloseEnabled}"/>
             </StackPanel>
         </Border>
     </Grid>

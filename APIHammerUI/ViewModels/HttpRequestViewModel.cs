@@ -16,7 +16,7 @@ using System.Windows.Input;
 
 namespace APIHammerUI.ViewModels;
 
-public class HttpRequestViewModel : INotifyPropertyChanged, IDisposable
+public class HttpRequestViewModel : ObservableObject, IDisposable
 {
     private readonly HttpRequestService _httpRequestService;
     private CancellationTokenSource? _currentRequestCancellation;
@@ -351,7 +351,4 @@ public class HttpRequestViewModel : INotifyPropertyChanged, IDisposable
         _currentRequestCancellation?.Dispose();
         HttpRequest.PropertyChanged -= OnHttpRequestPropertyChanged;
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    protected virtual void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

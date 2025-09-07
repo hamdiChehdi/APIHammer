@@ -220,8 +220,7 @@ public class MainWindowViewModel : ObservableObject
             var httpRequestCount = collection.Tabs.Count(tab => 
                 tab.RequestType == RequestType.HTTP && 
                 tab.Content is HttpRequestView httpView && 
-                httpView.DataContext is HttpRequestViewModel viewModel &&
-                !string.IsNullOrWhiteSpace(viewModel.HttpRequest.Url));
+                !string.IsNullOrWhiteSpace(httpView!.ViewModel!.HttpRequest.Url));
 
             if (httpRequestCount == 0)
             {

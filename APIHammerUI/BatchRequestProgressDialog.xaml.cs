@@ -1,16 +1,13 @@
-using System;
-using System.ComponentModel;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Threading;
-using APIHammerUI.Helpers;
 using APIHammerUI.Models;
 using APIHammerUI.Services;
+using APIHammerUI.ViewModels;
+using System.ComponentModel;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace APIHammerUI;
 
-public partial class BatchRequestProgressDialog : Window, INotifyPropertyChanged
+public partial class BatchRequestProgressDialog : Window
 {
     private readonly BatchRequestService _batchService;
     private readonly TabCollection _collection;
@@ -27,11 +24,12 @@ public partial class BatchRequestProgressDialog : Window, INotifyPropertyChanged
         set
         {
             _collectionName = value;
-            OnPropertyChanged(nameof(CollectionName));
         }
     }
 
     public BatchRequestResult? Result => _result;
+
+    private readonly BatchRequestProgressViewModel _viewModel;
 
     public BatchRequestProgressDialog(TabCollection collection)
     {
@@ -41,6 +39,9 @@ public partial class BatchRequestProgressDialog : Window, INotifyPropertyChanged
         _collection = collection ?? throw new ArgumentNullException(nameof(collection));
         _batchService = new BatchRequestService();
         CollectionName = collection.Name;
+        _viewModel = new BatchRequestProgressViewModel(collection);
+        _viewModel.RequestClose += (_, _) => { DialogResult = true; Close(); };
+        DataContext = _viewModel;
 
         // Setup timer for elapsed time display
         _elapsedTimer = new DispatcherTimer
@@ -53,12 +54,7 @@ public partial class BatchRequestProgressDialog : Window, INotifyPropertyChanged
         _batchService.ProgressChanged += BatchService_ProgressChanged;
 
         // Start the batch operation when the dialog loads
-        Loaded += BatchRequestProgressDialog_Loaded;
-    }
-
-    private async void BatchRequestProgressDialog_Loaded(object sender, RoutedEventArgs e)
-    {
-        await StartBatchOperation();
+        Loaded += async (_, _) => await _viewModel.StartAsync();
     }
 
     private async Task StartBatchOperation()
@@ -152,60 +148,11 @@ public partial class BatchRequestProgressDialog : Window, INotifyPropertyChanged
         });
     }
 
-    private void CancelButton_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            _cancellationTokenSource?.Cancel();
-            _elapsedTimer.Stop();
-            
-            StatusTextBlock.Text = "Cancelling batch operation...";
-            CancelButton.IsEnabled = false;
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Error cancelling operation: {ex.Message}", "Error", 
-                MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private void CloseButton_Click(object sender, RoutedEventArgs e)
-    {
-        DialogResult = true;
-        Close();
-    }
+    private void CancelButton_Click(object sender, RoutedEventArgs e) { }
+    private void CloseButton_Click(object sender, RoutedEventArgs e) { }
 
     protected override void OnClosing(CancelEventArgs e)
     {
-        // Only show confirmation if operation is still running (not completed and not cancelled)
-        if (!_operationCompleted && _cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested)
-        {
-            var result = MessageBox.Show(
-                "Batch operation is still running. Do you want to cancel it and close?",
-                "Confirm Close",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.No)
-            {
-                e.Cancel = true;
-                return;
-            }
-
-            _cancellationTokenSource.Cancel();
-        }
-
-        // Cleanup
-        _elapsedTimer?.Stop();
-        _cancellationTokenSource?.Dispose();
-        
         base.OnClosing(e);
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
