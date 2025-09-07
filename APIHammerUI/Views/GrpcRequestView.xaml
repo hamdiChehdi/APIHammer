@@ -13,6 +13,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -53,8 +54,28 @@
                 </Grid>
             </Border>
 
-            <!-- Service -->
+            <!-- Proto File -->
             <Border Grid.Row="2" 
+                    Background="{StaticResource DarkPanel}"
+                    BorderBrush="{StaticResource DarkBorder}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="16"
+                    Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Proto:" VerticalAlignment="Center" FontWeight="Medium" Foreground="{StaticResource TextSecondary}"/>
+                    <TextBox Grid.Column="1" Text="{Binding ProtoFilePath}" IsReadOnly="True" Style="{StaticResource DarkTextBoxStyle}" Margin="0,0,8,0"/>
+                    <Button Grid.Column="2" Content="Browse" Click="BrowseProto_Click" Style="{StaticResource SendButtonStyle}"/>
+                </Grid>
+            </Border>
+
+            <!-- Service -->
+            <Border Grid.Row="3" 
                     Background="{StaticResource DarkPanel}"
                     BorderBrush="{StaticResource DarkBorder}"
                     BorderThickness="1"
@@ -73,14 +94,15 @@
                                FontWeight="Medium"
                                Foreground="{StaticResource TextSecondary}"/>
                     
-                    <TextBox Grid.Column="1" 
-                             Text="{Binding Service, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource DarkTextBoxStyle}"/>
+                    <ComboBox Grid.Column="1" 
+                              ItemsSource="{Binding Services}"
+                              SelectedItem="{Binding Service, UpdateSourceTrigger=PropertyChanged}"
+                              Style="{StaticResource DarkComboBoxStyle}"/>
                 </Grid>
             </Border>
 
             <!-- Method and Call Button -->
-            <Border Grid.Row="3" 
+            <Border Grid.Row="4" 
                     Background="{StaticResource DarkPanel}"
                     BorderBrush="{StaticResource DarkBorder}"
                     BorderThickness="1"
@@ -100,10 +122,11 @@
                                FontWeight="Medium"
                                Foreground="{StaticResource TextSecondary}"/>
                     
-                    <TextBox Grid.Column="1" 
-                             Text="{Binding Method, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource DarkTextBoxStyle}"
-                             Margin="0,0,12,0"/>
+                    <ComboBox Grid.Column="1" 
+                              ItemsSource="{Binding Methods}"
+                              SelectedItem="{Binding Method, UpdateSourceTrigger=PropertyChanged}"
+                              Style="{StaticResource DarkComboBoxStyle}"
+                              Margin="0,0,12,0"/>
 
                     <Button Grid.Column="2" 
                             Content="Call Method" 
@@ -114,7 +137,7 @@
             </Border>
 
             <!-- Request Section -->
-            <StackPanel Grid.Row="4" Margin="0,0,0,20">
+            <StackPanel Grid.Row="5" Margin="0,0,0,20">
                 <TextBlock Text="Request (JSON)" 
                            FontSize="14" 
                            FontWeight="Medium" 
@@ -140,7 +163,7 @@
             </StackPanel>
 
             <!-- Response Section Header -->
-            <TextBlock Grid.Row="5" 
+            <TextBlock Grid.Row="6" 
                        Text="Response" 
                        FontSize="14" 
                        FontWeight="Medium" 
@@ -148,7 +171,7 @@
                        Margin="0,0,0,8"/>
 
             <!-- Response Section -->
-            <Border Grid.Row="6"
+            <Border Grid.Row="7"
                     Background="{StaticResource DarkBackground}"
                     BorderBrush="{StaticResource DarkBorder}"
                     BorderThickness="1"
