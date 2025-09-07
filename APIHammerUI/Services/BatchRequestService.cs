@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
 using APIHammerUI.Models;
 using APIHammerUI.Views;
+using System.Windows;
 
 namespace APIHammerUI.Services;
 
@@ -181,14 +176,19 @@ public class BatchRequestService
                 httpRequest.Response = "Sending request...";
             });
 
-            // Send the request using the HttpRequestService
-            var requestResult = await _httpRequestService.SendRequestAsync(httpRequest, cancellationToken);
+            // Send the request using the streaming method to better handle very large responses
+            var requestResult = await _httpRequestService.SendRequestStreamingAsync(
+                httpRequest,
+                onHeaders: null,   // Batch mode: we skip incremental UI header updates
+                onChunk: null,     // Avoid per-chunk UI updates for concurrency efficiency
+                cancellationToken: cancellationToken);
 
             // Update the UI with the results
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 httpRequest.IsLoading = false;
                 httpRequest.Response = requestResult.Response;
+                httpRequest.TruncatedResponse = requestResult.Response[..Math.Min(10000, requestResult.Response.Length)];
                 httpRequest.ResponseTime = requestResult.ResponseTime;
                 httpRequest.ResponseSize = requestResult.ResponseSize;
                 httpRequest.RequestDateTime = requestResult.RequestDateTime;
