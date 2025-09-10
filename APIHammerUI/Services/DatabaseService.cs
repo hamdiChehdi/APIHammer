@@ -13,7 +13,7 @@ namespace APIHammerUI.Services;
 /// </summary>
 public class DatabaseService : IDisposable
 {
-    private readonly LiteDatabase _database;
+    private LiteDatabase _database; // removed readonly to allow reopen after import
     private readonly string _databasePath;
     private bool _disposed;
 
@@ -25,18 +25,22 @@ public class DatabaseService : IDisposable
     {
         // Default to user's AppData folder
         _databasePath = databasePath ?? GetDefaultDatabasePath();
-        
-        // Ensure directory exists
+        EnsureDirectory();
+        OpenDatabase();
+    }
+
+    private void EnsureDirectory()
+    {
         var directory = Path.GetDirectoryName(_databasePath);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
         }
+    }
 
-        // Initialize database
+    private void OpenDatabase()
+    {
         _database = new LiteDatabase(_databasePath);
-        
-        // Configure collections
         ConfigureDatabase();
     }
 
@@ -46,6 +50,11 @@ public class DatabaseService : IDisposable
         var appFolder = Path.Combine(appDataPath, "APIHammer");
         return Path.Combine(appFolder, "apihammer.db");
     }
+
+    /// <summary>
+    /// Returns the current database file path
+    /// </summary>
+    public string GetDatabasePath() => _databasePath;
 
     private void ConfigureDatabase()
     {
@@ -74,17 +83,13 @@ public class DatabaseService : IDisposable
         return await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
             var collectionsCol = _database.GetCollection<PersistentTabCollection>(TabCollectionsTable);
-            
             collection.UpdatedAt = DateTime.UtcNow;
-            
             if (collection.Id == Guid.Empty)
             {
                 collection.Id = Guid.NewGuid();
                 collection.CreatedAt = DateTime.UtcNow;
             }
-
             collectionsCol.Upsert(collection);
             return collection.Id;
         });
@@ -98,13 +103,10 @@ public class DatabaseService : IDisposable
         return await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
             var collectionsCol = _database.GetCollection<PersistentTabCollection>(TabCollectionsTable);
             var collections = collectionsCol.Query()
                 .OrderBy(x => x.Order)
                 .ToList();
-            
-            // Apply secondary sorting in memory since LiteDB doesn't support ThenBy
             return collections.OrderBy(x => x.Order).ThenBy(x => x.CreatedAt).ToList();
         });
     }
@@ -117,7 +119,6 @@ public class DatabaseService : IDisposable
         return await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
             var collectionsCol = _database.GetCollection<PersistentTabCollection>(TabCollectionsTable);
             return collectionsCol.FindById(collectionId);
         });
@@ -131,14 +132,9 @@ public class DatabaseService : IDisposable
         return await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
             var collectionsCol = _database.GetCollection<PersistentTabCollection>(TabCollectionsTable);
             var tabsCol = _database.GetCollection<PersistentRequestTab>(RequestTabsTable);
-
-            // Delete all tabs in the collection
             tabsCol.DeleteMany(x => x.CollectionId == collectionId);
-            
-            // Delete the collection
             return collectionsCol.Delete(collectionId);
         });
     }
@@ -155,17 +151,13 @@ public class DatabaseService : IDisposable
         return await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
             var tabsCol = _database.GetCollection<PersistentRequestTab>(RequestTabsTable);
-            
             tab.UpdatedAt = DateTime.UtcNow;
-            
             if (tab.Id == Guid.Empty)
             {
                 tab.Id = Guid.NewGuid();
                 tab.CreatedAt = DateTime.UtcNow;
             }
-
             tabsCol.Upsert(tab);
             return tab.Id;
         });
@@ -179,13 +171,10 @@ public class DatabaseService : IDisposable
         return await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
             var tabsCol = _database.GetCollection<PersistentRequestTab>(RequestTabsTable);
             var tabs = tabsCol.Query()
                 .Where(x => x.CollectionId == collectionId)
                 .ToList();
-            
-            // Apply sorting in memory since LiteDB doesn't support ThenBy
             return tabs.OrderBy(x => x.Order).ThenBy(x => x.CreatedAt).ToList();
         });
     }
@@ -198,7 +187,6 @@ public class DatabaseService : IDisposable
         return await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
             var tabsCol = _database.GetCollection<PersistentRequestTab>(RequestTabsTable);
             return tabsCol.FindById(tabId);
         });
@@ -212,7 +200,6 @@ public class DatabaseService : IDisposable
         return await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
             var tabsCol = _database.GetCollection<PersistentRequestTab>(RequestTabsTable);
             return tabsCol.Delete(tabId);
         });
@@ -226,16 +213,12 @@ public class DatabaseService : IDisposable
         return await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
             var tabsCol = _database.GetCollection<PersistentRequestTab>(RequestTabsTable);
             var tab = tabsCol.FindById(tabId);
-            
             if (tab == null)
                 return false;
-
             tab.CollectionId = newCollectionId;
             tab.UpdatedAt = DateTime.UtcNow;
-            
             return tabsCol.Update(tab);
         });
     }
@@ -252,12 +235,8 @@ public class DatabaseService : IDisposable
         await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
-            // LiteDB v5 doesn't have BeginTrans, we'll use simple upsert operations
             var collectionsCol = _database.GetCollection<PersistentTabCollection>(TabCollectionsTable);
             var tabsCol = _database.GetCollection<PersistentRequestTab>(RequestTabsTable);
-
-            // Save collections
             foreach (var collection in collections)
             {
                 collection.UpdatedAt = DateTime.UtcNow;
@@ -268,8 +247,6 @@ public class DatabaseService : IDisposable
                 }
                 collectionsCol.Upsert(collection);
             }
-
-            // Save tabs
             foreach (var tab in tabs)
             {
                 tab.UpdatedAt = DateTime.UtcNow;
@@ -291,23 +268,17 @@ public class DatabaseService : IDisposable
         return await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
             var collectionsCol = _database.GetCollection<PersistentTabCollection>(TabCollectionsTable);
             var tabsCol = _database.GetCollection<PersistentRequestTab>(RequestTabsTable);
-
             var collections = collectionsCol.Query()
                 .OrderBy(x => x.Order)
                 .ToList();
-
             var tabs = tabsCol.FindAll().ToList();
-
-            // Apply sorting in memory since LiteDB doesn't support complex sorting
             collections = collections.OrderBy(x => x.Order).ThenBy(x => x.CreatedAt).ToList();
             tabs = tabs.OrderBy(x => x.CollectionId)
                       .ThenBy(x => x.Order)
                       .ThenBy(x => x.CreatedAt)
                       .ToList();
-
             return (collections, tabs);
         });
     }
@@ -336,10 +307,8 @@ public class DatabaseService : IDisposable
         return await Task.Run(() =>
         {
             ThrowIfDisposed();
-            
             var collectionsCol = _database.GetCollection<PersistentTabCollection>(TabCollectionsTable);
             var tabsCol = _database.GetCollection<PersistentRequestTab>(RequestTabsTable);
-
             return new DatabaseStats
             {
                 CollectionCount = collectionsCol.Count(),
@@ -352,6 +321,45 @@ public class DatabaseService : IDisposable
 
     #endregion
 
+    #region Import/Export
+    /// <summary>
+    /// Export (backup) the entire database to the specified file.
+    /// Uses LiteDB's Backup to guarantee a consistent snapshot while DB is open.
+    /// </summary>
+    public async Task ExportAsync(string destinationPath)
+    {
+        await Task.Run(() =>
+        {
+            ThrowIfDisposed();
+            if (string.IsNullOrWhiteSpace(destinationPath)) throw new ArgumentException("Destination path invalid", nameof(destinationPath));
+            var destDir = Path.GetDirectoryName(destinationPath);
+            if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
+            // Flush dirty pages to disk then copy the file
+            _database.Checkpoint();
+            File.Copy(_databasePath, destinationPath, true);
+        });
+    }
+
+    /// <summary>
+    /// Import (restore) the database from another file, replacing current data.
+    /// Reopens the LiteDatabase instance after copying.
+    /// </summary>
+    public async Task ImportAsync(string sourcePath)
+    {
+        await Task.Run(() =>
+        {
+            ThrowIfDisposed();
+            if (!File.Exists(sourcePath)) throw new FileNotFoundException("Source database file not found", sourcePath);
+            // Dispose current instance to release file lock
+            _database?.Dispose();
+            // Overwrite existing file
+            File.Copy(sourcePath, _databasePath, true);
+            // Re-open
+            OpenDatabase();
+        });
+    }
+    #endregion
+
     private void ThrowIfDisposed()
     {
         if (_disposed)
@@ -362,7 +370,6 @@ public class DatabaseService : IDisposable
     {
         if (_disposed)
             return;
-
         _database?.Dispose();
         _disposed = true;
     }
@@ -377,7 +384,7 @@ public class DatabaseStats
     public int TabCount { get; set; }
     public long DatabaseSizeBytes { get; set; }
     public string DatabasePath { get; set; } = "";
-    
+
     public string DatabaseSizeFormatted =>
         DatabaseSizeBytes < 1024 ? $"{DatabaseSizeBytes} B" :
         DatabaseSizeBytes < 1024 * 1024 ? $"{DatabaseSizeBytes / 1024.0:F1} KB" :

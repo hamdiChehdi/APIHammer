@@ -261,6 +261,10 @@ public class PersistenceManagerService : IDisposable
         await _databaseService.CompactDatabaseAsync();
     }
 
+    // New passthrough helpers for backup/restore
+    public Task ExportDatabaseAsync(string destinationPath) => _databaseService.ExportAsync(destinationPath);
+    public Task ImportDatabaseAsync(string sourcePath) => _databaseService.ImportAsync(sourcePath);
+
     private async void AutoSaveTimer_Tick(object? sender, EventArgs e)
     {
         // Check if we're disposed before triggering auto-save

@@ -12,6 +12,7 @@ using APIHammerUI.Commands;
 using System.Text;
 using System.Runtime.CompilerServices;
 using APIHammerUI.Helpers;
+using Microsoft.Win32; // for file dialogs
 
 namespace APIHammerUI.ViewModels;
 
@@ -64,6 +65,8 @@ public class MainWindowViewModel : ObservableObject
     public ICommand CloseTabMenuCommand { get; }
     public ICommand CloseTabCommand { get; }
     public ICommand ImportOpenApiCommand { get; }
+    public ICommand ExportDatabaseCommand { get; }
+    public ICommand ImportDatabaseCommand { get; }
 
     public MainWindowViewModel()
     {
@@ -90,6 +93,8 @@ public class MainWindowViewModel : ObservableObject
         CloseTabMenuCommand = new RelayCommand<RequestTab>(ExecuteCloseTabMenu, CanExecuteCloseTabMenu);
         CloseTabCommand = new RelayCommand<RequestTab>(ExecuteCloseTab);
         ImportOpenApiCommand = new RelayCommand(ExecuteImportOpenApi);
+        ExportDatabaseCommand = new RelayCommand(ExecuteExportDatabase);
+        ImportDatabaseCommand = new RelayCommand(ExecuteImportDatabase);
 
         // Subscribe to property changes for command updates
         PropertyChanged += OnPropertyChanged;
@@ -631,5 +636,54 @@ public class MainWindowViewModel : ObservableObject
         {
             System.Diagnostics.Debug.WriteLine($"Error during shutdown: {ex}");
         }
+    }
+
+    // New: Export full database file
+    private async void ExecuteExportDatabase()
+    {
+        try
+        {
+            var dlg = new SaveFileDialog
+            {
+                Title = "Export APIHammer Profile",
+                Filter = "APIHammer Database (*.db)|*.db|All Files (*.*)|*.*",
+                FileName = $"apihammer-backup-{DateTime.Now:yyyyMMddHHmmss}.db"
+            };
+            if (dlg.ShowDialog() == true)
+            {
+                await SaveAllDataAsync(); // ensure latest data persisted
+                await _persistenceManager.ExportDatabaseAsync(dlg.FileName);
+                MessageBox.Show("Profile exported successfully.", "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        { MessageBox.Show($"Export failed: {ex.Message}", "Export Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
+    // New: Import (restore) database file
+    private async void ExecuteImportDatabase()
+    {
+        try
+        {
+            var confirm = MessageBox.Show("Importing will replace your current profile data. Continue?", "Confirm Import", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes) return;
+            var dlg = new OpenFileDialog
+            {
+                Title = "Import APIHammer Profile",
+                Filter = "APIHammer Database (*.db)|*.db|All Files (*.*)|*.*"
+            };
+            if (dlg.ShowDialog() == true)
+            {
+                await _persistenceManager.ImportDatabaseAsync(dlg.FileName);
+                // Reload collections
+                var loadedCollections = await _persistenceManager.LoadCollectionsAsync();
+                TabCollections = loadedCollections;
+                SelectedCollection = TabCollections.FirstOrDefault();
+                SelectedTab = SelectedCollection?.Tabs.FirstOrDefault();
+                MessageBox.Show("Profile imported successfully.", "Import Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        { MessageBox.Show($"Import failed: {ex.Message}", "Import Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 }
