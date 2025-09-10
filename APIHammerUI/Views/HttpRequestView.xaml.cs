@@ -60,5 +60,23 @@ namespace APIHammerUI.Views
                 _viewModel?.Dispose();
             }
         }
+
+        private void CopyResponseMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel?.CopyResponseCommand?.CanExecute(null) == true)
+                ViewModel.CopyResponseCommand.Execute(null);
+        }
+
+        private void SaveAsJsonMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel?.SaveAsJsonCommand?.CanExecute(null) == true)
+                ViewModel.SaveAsJsonCommand.Execute(null);
+        }
+
+        private void SaveAsTextMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel?.SaveAsTextCommand?.CanExecute(null) == true)
+                ViewModel.SaveAsTextCommand.Execute(null);
+        }
     }
 }

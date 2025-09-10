@@ -819,18 +819,18 @@
                              VirtualizingPanel.IsVirtualizing="True">
                         <TextBox.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="Copy Response" Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.CopyResponseCommand}">
+                                <MenuItem Header="Copy Response" Click="CopyResponseMenuItem_Click">
                                     <MenuItem.Icon>
                                         <TextBlock Text="📋" FontFamily="Segoe UI Emoji"/>
                                     </MenuItem.Icon>
                                 </MenuItem>
                                 <Separator/>
-                                <MenuItem Header="Save as JSON..." Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.SaveAsJsonCommand}">
+                                <MenuItem Header="Save as JSON..." Click="SaveAsJsonMenuItem_Click">
                                     <MenuItem.Icon>
                                         <TextBlock Text="💾" FontFamily="Segoe UI Emoji"/>
                                     </MenuItem.Icon>
                                 </MenuItem>
-                                <MenuItem Header="Save as Text..." Command="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ViewModel.SaveAsTextCommand}">
+                                <MenuItem Header="Save as Text..." Click="SaveAsTextMenuItem_Click">
                                     <MenuItem.Icon>
                                         <TextBlock Text="📄" FontFamily="Segoe UI Emoji"/>
                                     </MenuItem.Icon>
