@@ -180,7 +180,7 @@ public class HttpRequest : ObservableObject
     private string _url = "";
     private string _body = "";
     private string _response = "";
-    private string _trucatedResponse = "truncated response";
+    private string _trucatedResponse = "";
     private bool _isLoading;
     private ObservableCollection<HttpHeaderItem> _headers;
     private ObservableCollection<HttpQueryParameter> _queryParameters;

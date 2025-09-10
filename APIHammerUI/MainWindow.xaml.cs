@@ -89,14 +89,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void CollectionMenu_Export(object sender, RoutedEventArgs e)
-    {
-        if (GetMenuDataContext<TabCollection>(sender) is TabCollection collection && _viewModel.ExportCollectionMenuCommand is System.Windows.Input.ICommand cmd && cmd.CanExecute(collection))
-        {
-            cmd.Execute(collection);
-        }
-    }
-
     private void CollectionMenu_Delete(object sender, RoutedEventArgs e)
     {
         if (GetMenuDataContext<TabCollection>(sender) is TabCollection collection && _viewModel.DeleteCollectionMenuCommand is System.Windows.Input.ICommand cmd && cmd.CanExecute(collection))

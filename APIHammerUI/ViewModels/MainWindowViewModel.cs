@@ -55,7 +55,6 @@ public class MainWindowViewModel : ObservableObject
     public ICommand DeleteCollectionCommand { get; }
     public ICommand SendAllRequestsCommand { get; }
     public ICommand RenameCollectionMenuCommand { get; }
-    public ICommand ExportCollectionMenuCommand { get; }
     public ICommand DeleteCollectionMenuCommand { get; }
     public ICommand NewHttpTabCommand { get; }
     public ICommand NewWebSocketTabCommand { get; }
@@ -83,7 +82,6 @@ public class MainWindowViewModel : ObservableObject
         DeleteCollectionCommand = new RelayCommand(ExecuteDeleteCollection, CanDeleteCollection);
         SendAllRequestsCommand = new RelayCommand<TabCollection>(async (collection) => await ExecuteSendAllRequestsAsync(collection));
         RenameCollectionMenuCommand = new RelayCommand<TabCollection>(ExecuteRenameCollectionMenu);
-        ExportCollectionMenuCommand = new RelayCommand<TabCollection>(ExecuteExportCollectionMenu);
         DeleteCollectionMenuCommand = new RelayCommand<TabCollection>(ExecuteDeleteCollectionMenu);
         NewHttpTabCommand = new RelayCommand(ExecuteNewHttpTab);
         NewWebSocketTabCommand = new RelayCommand(ExecuteNewWebSocketTab);
@@ -322,15 +320,6 @@ public class MainWindowViewModel : ObservableObject
             MessageBox.Show($"Error renaming collection: {ex.Message}", "Error", 
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
-    }
-
-    private void ExecuteExportCollectionMenu(TabCollection? collection)
-    {
-        if (collection == null) return;
-
-        // TODO: Implement collection export functionality
-        MessageBox.Show($"Export functionality for collection '{collection.Name}' will be implemented in a future version.", 
-            "Feature Coming Soon", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private async void ExecuteDeleteCollectionMenu(TabCollection? collection)

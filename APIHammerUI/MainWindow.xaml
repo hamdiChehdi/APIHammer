@@ -79,7 +79,6 @@
                                             <MenuItem Header="Send All Requests" Click="CollectionMenu_SendAllRequests"/>
                                             <Separator />
                                             <MenuItem Header="Rename Collection" Click="CollectionMenu_Rename"/>
-                                            <MenuItem Header="Export Collection..." Click="CollectionMenu_Export"/>
                                             <Separator />
                                             <MenuItem Header="Delete Collection" Click="CollectionMenu_Delete"/>
                                         </ContextMenu>
