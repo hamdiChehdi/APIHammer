@@ -99,7 +99,7 @@
                                                 </ContextMenu>
                                             </StackPanel.ContextMenu>
                                             <Border Background="{Binding RequestType, Converter={StaticResource RequestTypeColorConverter}}" CornerRadius="3" Padding="6,2" Margin="0,0,8,0">
-                                                <TextBlock Text="{Binding RequestType, Converter={StaticResource RequestTypeIconConverter}}" Foreground="White" FontSize="8" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding DisplayMethodLabel}" Foreground="White" FontSize="8" FontWeight="Bold"/>
                                             </Border>
                                             <TextBlock Text="{Binding Name}" Foreground="{StaticResource TextPrimary}" FontSize="12" VerticalAlignment="Center"/>
                                         </StackPanel>

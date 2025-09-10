@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
 using APIHammerUI.Models;
+using APIHammerUI.Views;
 
 namespace APIHammerUI.Converters;
 
@@ -46,29 +47,6 @@ public class ConnectionStatusConverter : IValueConverter
         if (value is bool isConnected)
             return isConnected ? "Status: Connected" : "Status: Disconnected";
         return "Status: Unknown";
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class RequestTypeIconConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        if (value is RequestType requestType)
-        {
-            return requestType switch
-            {
-                RequestType.HTTP => "HTTP",
-                RequestType.WebSocket => "WS",
-                RequestType.gRPC => "gRPC",
-                _ => "REQ"
-            };
-        }
-        return "REQ";
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
