@@ -283,10 +283,6 @@
                                         <ScrollViewer x:Name="DropDownScrollViewer">
                                             <Grid RenderOptions.ClearTypeHint="Enabled">
                                                 <Canvas Height="0" Width="0" HorizontalAlignment="Left" VerticalAlignment="Top">
-                                                    <Rectangle x:Name="OpaqueRect"
-                                                               Height="{Binding ElementName=DropDownBorder, Path=ActualHeight}"
-                                                               Width="{Binding ElementName=DropDownBorder, Path=ActualWidth}"
-                                                               Fill="{Binding ElementName=DropDownBorder, Path=Background}"/>
                                                 </Canvas>
                                                 <ItemsPresenter x:Name="ItemsPresenter"
                                                                 KeyboardNavigation.DirectionalNavigation="Contained"
