@@ -8,8 +8,15 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Resources\apiHammer.ico</ApplicationIcon>
   </PropertyGroup>
-  
-  <ItemGroup>
+
+	<PropertyGroup>
+		<Version>1.0.0</Version>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+		<InformationalVersion>1.0.0</InformationalVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
     <EmbeddedResource Include="Resources\*.json" />
     <Resource Include="Resources\apiHammer.ico" />
   </ItemGroup>
