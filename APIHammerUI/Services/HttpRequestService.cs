@@ -28,8 +28,8 @@ public class HttpRequestService
         Timeout = System.Threading.Timeout.InfiniteTimeSpan
     };
 
-    // Cap how much of the body we keep in memory for the final Response property (50 MB default)
-    private const long MAX_CAPTURE_BYTES = 50L * 1024 * 1024; // 50MB safeguard to avoid OOM
+    // Cap how much of the body we keep in memory for the final Response property (100 MB default)
+    private const long MAX_CAPTURE_BYTES = 100L * 1024 * 1024; // 100MB safeguard to avoid OOM
 
     static HttpRequestService()
     {
