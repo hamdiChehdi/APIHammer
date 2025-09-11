@@ -676,6 +676,62 @@
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
+
+                <!-- Advanced Tab -->
+                <TabItem Header="Advanced">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+                        <StackPanel>
+                            <TextBlock Text="Configure advanced HTTP client settings" 
+                                       FontSize="12" 
+                                       Foreground="{StaticResource TextMuted}"
+                                       Margin="0,0,0,16"/>
+
+                            <Border Background="{StaticResource DarkPanel}"
+                                    BorderBrush="{StaticResource DarkBorder}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="16">
+                                <StackPanel>
+                                    <!-- Timeout -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="180"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Timeout (seconds):" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"/>
+                                        <TextBox Grid.Column="1" Text="{Binding TimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource DarkTextBoxStyle}" ToolTip="Leave blank or 0 for no timeout"/>
+                                        <TextBlock Grid.Column="2" Text="Set a maximum duration. 0 or blank for infinite." Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                    </Grid>
+
+                                    <!-- Max Capture Size -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="180"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Max Capture Size (MB):" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"/>
+                                        <TextBox Grid.Column="1" Text="{Binding MaxCaptureSizeMB, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource DarkTextBoxStyle}" ToolTip="Limit stored in-memory response body size"/>
+                                        <TextBlock Grid.Column="2" Text="Soft cap for stored body. Larger bodies will truncate." Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                    </Grid>
+
+                                    <!-- Format JSON -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="180"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Pretty Print JSON:" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"/>
+                                        <CheckBox Grid.Column="1" IsChecked="{Binding FormatJson}" Style="{StaticResource DarkCheckBoxStyle}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <TextBlock Grid.Column="2" Text="Automatically format small JSON responses." Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
             </TabControl>
 
             <!-- Response Section Header -->

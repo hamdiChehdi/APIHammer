@@ -28,8 +28,8 @@ public class HttpRequestService
         Timeout = System.Threading.Timeout.InfiniteTimeSpan
     };
 
-    // Cap how much of the body we keep in memory for the final Response property (100 MB default)
-    private const long MAX_CAPTURE_BYTES = 100L * 1024 * 1024; // 100MB safeguard to avoid OOM
+    // Default cap (will be overridden per request by advanced settings)
+    private const long DEFAULT_MAX_CAPTURE_BYTES = 100L * 1024 * 1024; // 100MB safeguard to avoid OOM
 
     static HttpRequestService()
     {
@@ -39,12 +39,13 @@ public class HttpRequestService
 
     /// <summary>
     /// Sends an HTTP request and returns the result (no artificial response size limit).
+    /// NOTE: Non-streaming path; still respects advanced formatting toggle.
     /// </summary>
     public async Task<HttpRequestResult> SendRequestAsync(HttpRequest httpRequest, CancellationToken cancellationToken = default)
     {
         HttpRequestMessage? request = null;
         HttpResponseMessage? response = null;
-        
+        using var cts = CreateLinkedTimeoutCts(httpRequest.TimeoutSeconds, cancellationToken);
         try
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -53,12 +54,11 @@ public class HttpRequestService
             {
                 return new HttpRequestResult { Success = false, ErrorMessage = "Invalid URL format.", RequestDateTime = DateTime.Now };
             }
-            response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token).ConfigureAwait(false);
             stopwatch.Stop();
             var headers = BuildResponseHeaders(response, request, httpRequest);
-            // WARNING: This allocates full body string; reserved for smaller bodies.
-            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            var formatted = await FormatResponseContentAsync(body, response).ConfigureAwait(false);
+            var body = await response.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+            var formatted = httpRequest.FormatJson ? await FormatResponseContentAsync(body, response).ConfigureAwait(false) : body;
             var full = headers + formatted;
             return new HttpRequestResult
             {
@@ -68,6 +68,10 @@ public class HttpRequestService
                 ResponseSize = Encoding.UTF8.GetByteCount(body),
                 RequestDateTime = DateTime.Now
             };
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            return new HttpRequestResult { Success = false, ErrorMessage = "Request timed out", Response = "Request timed out.", RequestDateTime = DateTime.Now };
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -86,6 +90,7 @@ public class HttpRequestService
 
     /// <summary>
     /// Streaming request that invokes callbacks for header and content chunks. Avoids keeping the entire body in memory.
+    /// Respects advanced settings for timeout, capture size, and formatting.
     /// </summary>
     public async Task<HttpRequestResult> SendRequestStreamingAsync(
         HttpRequest httpRequest,
@@ -95,10 +100,19 @@ public class HttpRequestService
     {
         HttpRequestMessage? request = null;
         HttpResponseMessage? response = null;
+
+        // Determine capture limit (convert MB to bytes, clamp minimum 1MB, maximum maybe 1GB for safety)
+        var maxCaptureBytes = DEFAULT_MAX_CAPTURE_BYTES;
+        if (httpRequest.MaxCaptureSizeMB > 0)
+        {
+            maxCaptureBytes = Math.Clamp((long)httpRequest.MaxCaptureSizeMB * 1024 * 1024, 1L * 1024 * 1024, 1024L * 1024 * 1024);
+        }
+
         var capturedBuilder = new StringBuilder(64 * 1024); // start modest
         long capturedBytes = 0;
         long totalBytes = 0;
         bool truncated = false;
+        using var cts = CreateLinkedTimeoutCts(httpRequest.TimeoutSeconds, cancellationToken);
         try
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -107,15 +121,15 @@ public class HttpRequestService
             {
                 return new HttpRequestResult { Success = false, ErrorMessage = "Invalid URL format." };
             }
-            response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token).ConfigureAwait(false);
             var headerText = BuildResponseHeaders(response, request, httpRequest);
             onHeaders?.Invoke(headerText);
 
-            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var stream = await response.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
             using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 16 * 1024);
             var buffer = new char[16 * 1024];
             int read;
-            while ((read = await reader.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
+            while ((read = await reader.ReadAsync(buffer.AsMemory(0, buffer.Length), cts.Token)) > 0)
             {
                 var slice = new string(buffer, 0, read);
                 var sliceByteCount = Encoding.UTF8.GetByteCount(slice);
@@ -124,22 +138,20 @@ public class HttpRequestService
                 // Forward slice to UI (display layer already truncates)
                 onChunk?.Invoke(slice);
 
-                // Capture only up to MAX_CAPTURE_BYTES
+                // Capture only up to maxCaptureBytes
                 if (!truncated)
                 {
-                    if (capturedBytes + sliceByteCount <= MAX_CAPTURE_BYTES)
+                    if (capturedBytes + sliceByteCount <= maxCaptureBytes)
                     {
                         capturedBuilder.Append(slice);
                         capturedBytes += sliceByteCount;
                     }
                     else
                     {
-                        // Append partial that fits (optional) then mark truncated
-                        var remaining = (int)(MAX_CAPTURE_BYTES - capturedBytes);
+                        var remaining = (int)(maxCaptureBytes - capturedBytes);
                         if (remaining > 0)
                         {
-                            // Attempt to take only chars that fit approx by bytes: fallback simple substring
-                            capturedBuilder.Append(slice); // small overshoot acceptable vs complexity
+                            capturedBuilder.Append(slice); // small overshoot acceptable
                         }
                         truncated = true;
                     }
@@ -147,22 +159,19 @@ public class HttpRequestService
 
                 if (truncated)
                 {
-                    // We can stop reading further to save bandwidth/memory if user only needs initial part
-                    // Break to abandon rest of body
-                    break;
+                    break; // stop downloading more if we decided to truncate
                 }
             }
             stopwatch.Stop();
 
             string bodyPortion = capturedBuilder.ToString();
-            // Only attempt JSON formatting if not truncated and under formatting threshold
-            if (!truncated)
+            if (!truncated && httpRequest.FormatJson)
             {
                 bodyPortion = await FormatResponseContentAsync(bodyPortion, response).ConfigureAwait(false);
             }
-            else
+            else if (truncated)
             {
-                bodyPortion += $"\n[Body truncated after {capturedBytes / (1024.0 * 1024.0):F1} MB to prevent excessive memory usage. Full content not downloaded.]";
+                bodyPortion += $"\n[Body truncated after {capturedBytes / (1024.0 * 1024.0):F1} MB (limit {maxCaptureBytes / (1024.0 * 1024.0):F1} MB). Full content not downloaded.]";
             }
 
             var fullResponse = headerText + bodyPortion;
@@ -174,6 +183,10 @@ public class HttpRequestService
                 ResponseSize = truncated ? capturedBytes : totalBytes,
                 RequestDateTime = DateTime.Now
             };
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            return new HttpRequestResult { Success = false, ErrorMessage = "Request timed out", Response = "Request timed out." };
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -188,6 +201,18 @@ public class HttpRequestService
             response?.Dispose();
             request?.Dispose();
         }
+    }
+
+    private static CancellationTokenSource CreateLinkedTimeoutCts(int? timeoutSeconds, CancellationToken externalToken)
+    {
+        if (timeoutSeconds.HasValue && timeoutSeconds.Value > 0)
+        {
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(externalToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds.Value));
+            return cts;
+        }
+        // no timeout -> link only
+        return CancellationTokenSource.CreateLinkedTokenSource(externalToken);
     }
 
     private static HttpRequestMessage? BuildRequest(HttpRequest httpRequest)
@@ -272,63 +297,45 @@ public class HttpRequestService
 
     private string BuildResponseHeaders(HttpResponseMessage response, HttpRequestMessage request, HttpRequest httpRequest)
     {
-        var responseText = new StringBuilder(512); // Reduce initial capacity to save memory
+        var responseText = new StringBuilder(512);
         responseText.AppendLine($"Status: {(int)response.StatusCode} {response.StatusCode}");
         responseText.AppendLine($"Request URL: {request.RequestUri}");
-        
-        // Show authentication info (without sensitive data)
         if (httpRequest.Authentication.Type != AuthenticationType.None)
         {
             responseText.AppendLine($"Authentication: {httpRequest.Authentication.Type}");
         }
-        
+        if (httpRequest.TimeoutSeconds.HasValue && httpRequest.TimeoutSeconds.Value > 0)
+        {
+            responseText.AppendLine($"Timeout: {httpRequest.TimeoutSeconds.Value}s");
+        }
         responseText.AppendLine();
         responseText.AppendLine("Response Headers:");
-        
         foreach (var header in response.Headers)
-        {
             responseText.AppendLine($"  {header.Key}: {string.Join(", ", header.Value)}");
-        }
-        
         foreach (var header in response.Content.Headers)
-        {
             responseText.AppendLine($"  {header.Key}: {string.Join(", ", header.Value)}");
-        }
-
         responseText.AppendLine();
         responseText.AppendLine("Response Body:");
-
         return responseText.ToString();
     }
 
     private async Task<string> FormatResponseContentAsync(string content, HttpResponseMessage response)
     {
         const int largeResponseThreshold = 1024 * 1024; // 1MB
-
-        // Don't format very large responses to avoid memory issues
         if (content.Length > largeResponseThreshold)
-        {
             return content;
-        }
-
         try
         {
             if (response.Content.Headers.ContentType?.MediaType?.Contains("json") == true)
             {
-                // Use System.Text.Json for formatting
                 using var document = JsonDocument.Parse(content);
-                var options = new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                };
+                var options = new JsonSerializerOptions { WriteIndented = true };
                 return JsonSerializer.Serialize(document, options);
             }
         }
         catch (JsonException)
         {
-            // Return original content if formatting fails
         }
-
         return content;
     }
 }

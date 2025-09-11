@@ -186,6 +186,11 @@ public class HttpRequest : ObservableObject
     private ObservableCollection<HttpQueryParameter> _queryParameters;
     private AuthenticationSettings _authentication;
     
+    // Advanced settings (new)
+    private int? _timeoutSeconds; // null or <=0 => infinite
+    private int _maxCaptureSizeMB = 100; // used to limit memory capture
+    private bool _formatJson = true; // pretty print JSON when small enough
+    
     // Response metadata properties
     private TimeSpan? _responseTime;
     private long? _responseSize;
@@ -316,6 +321,38 @@ public class HttpRequest : ObservableObject
         {
             _authentication = value;
             OnPropertyChanged(nameof(Authentication));
+        }
+    }
+
+    // Advanced settings properties
+    public int? TimeoutSeconds
+    {
+        get => _timeoutSeconds;
+        set
+        {
+            _timeoutSeconds = value;
+            OnPropertyChanged(nameof(TimeoutSeconds));
+        }
+    }
+
+    public int MaxCaptureSizeMB
+    {
+        get => _maxCaptureSizeMB;
+        set
+        {
+            if (value <= 0) value = 1; // minimum 1MB safeguard
+            _maxCaptureSizeMB = value;
+            OnPropertyChanged(nameof(MaxCaptureSizeMB));
+        }
+    }
+
+    public bool FormatJson
+    {
+        get => _formatJson;
+        set
+        {
+            _formatJson = value;
+            OnPropertyChanged(nameof(FormatJson));
         }
     }
 
