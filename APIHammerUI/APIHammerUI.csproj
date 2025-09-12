@@ -18,6 +18,7 @@
 
 	<ItemGroup>
     <EmbeddedResource Include="Resources\*.json" />
+    <Content Include="docs\images\*.png" />
     <Resource Include="Resources\apiHammer.ico" />
   </ItemGroup>
 

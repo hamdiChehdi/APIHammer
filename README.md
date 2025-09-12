@@ -30,8 +30,25 @@ A modern, lightweight, developer-friendly HTTP client and API testing tool built
 | MVVM Refactor | View logic separated into ViewModel + behaviors (see `MVVM_Refactoring_Summary.md`) |
 | Truncation Safeguards | Large responses truncated in UI while preserving full capture within configured limits |
 
-## Screenshots (Coming Soon)
-_Add screenshots of the main request view, advanced tab, and batch progress dialog._
+## Screenshots
+
+> Place your captured images in `docs/images/` (create folder if missing). Use PNG for clarity. Filenames below are suggestions.
+
+| View | Image | Description |
+|------|-------|-------------|
+| Main Request UI | ![Main Request](docs/images/main-request-view.png) | Base layout with method, URL, headers & response panel |
+| Headers + Suggestions | ![Headers](docs/images/headers-tab.png) | Header editor with quick-add list |
+| Authentication | ![Authentication](docs/images/auth-tab.png) | Basic, Bearer, API Key examples |
+| Query Parameters | ![Query Params](docs/images/query-params-tab.png) | Dynamic query parameter rows |
+| Body Editing | ![Body](docs/images/body-tab.png) | Raw body editor (JSON example) |
+| Advanced Settings | ![Advanced](docs/images/advanced-tab.png) | Timeout, capture size, pretty-print toggles |
+| Streaming Response | ![Streaming](docs/images/streaming-response.png) | Incremental response rendering |
+| Batch Progress | ![Batch](docs/images/batch-progress-dialog.png) | Batch execution progress dialog |
+
+(Optional) Add an animated GIF demonstrating a full request lifecycle:
+```
+![Demo](docs/images/demo-sequence.gif)
+```
 
 ## Usage
 
